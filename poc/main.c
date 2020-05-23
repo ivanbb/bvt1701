@@ -73,7 +73,7 @@ int ret,
        fromlen = sizeof(from),
        done = 0,
        maxhops,
-       timeout = 10000;
+       timeout = 100;
 
 char *icmp_data,
        *recvbuf;
@@ -246,11 +246,11 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
        case ICMP_DESTUNREACH:  // Can't reach the destination at all
            printf("%2d  %s  reports: Host is unreachable\n", ttl,
                   inet_ntoa(inaddr));
-           return 1;
+           return 2;
            break;
        default:
            printf("non-echo type %d recvd\n", icmphdr->i_type);
-           return 1;
+           return 2;
            break;
    }
 
@@ -280,6 +280,9 @@ int receiveICMP(int ttl) {
    //
    //  done = decode_resp(recvbuf, ret, &from, ttl);
    done = getReply(recvbuf, ret, &from, ttl);
+   if (done == 1) {
+       return 1;
+       }
    Sleep(100);
 
    return 0;
@@ -526,7 +529,7 @@ void fill_icmp_data(char *icmp_data, int datasize) {
 
 
 int main(int argc, char *argv[]) {
-   char ip[15] = "8.8.8.8"; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
+   char ip[15] = "192.168.10.1"; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
    char logName[50] = "log.txt"; //�������� ����� ��� ������������� � start()
    FILE * log;
    int ttl = 1;
@@ -695,8 +698,8 @@ int main(int argc, char *argv[]) {
                            break;
 
 
-                       ttl++;
                    }
+                   ttl++;
                } //����� analyze
            case 0:
                switch (Print_log(logName, ip, code, ttl)){
