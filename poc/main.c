@@ -530,8 +530,8 @@ void fill_icmp_data(char *icmp_data, int datasize) {
 
 
 int main(int argc, char *argv[]) {
-   char ip[15] = "192.168.10.1"; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
-   char logName[50] = "log.txt"; //�������� ����� ��� ������������� � start()
+   char ip[15] = "192.168.10.1"; //первый аргумент - ip; TODO: сделать проверку на наличие аргументов…
+   char logName[50] = "log.txt"; //название файла для инициализации в start()
    FILE * log;
    int ttl = 1;
    int code = 0;
@@ -668,13 +668,13 @@ int main(int argc, char *argv[]) {
                                break;
                            
 
-                       case 1: //��������� �������� ����� ��� �������� �����
-                                                      code = 3;
+                       case 1: //Достигнут конечный пункт или превышен лимит
+                       code = 3;
                            switch (Print_log(logName, ip, code, ttl)){
                                case 1:
                                    finish(logName);
-                                   done = 1;
-                                break;
+				done = 1;
+                                   break;
 
                                case 0:
                                     code = 1;
