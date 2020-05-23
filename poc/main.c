@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #pragma pack(4)
 
@@ -11,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #pragma comment(lib, "ws2_32.lib")
 //
@@ -61,9 +61,8 @@ typedef struct _ihdr {
 #define DEF_PACKET_SIZE         32
 #define MAX_PACKET            1024
 
-//этот блок должен быть в мейне, так как функции у нас принимают другие параметры, пришлось глобально
-//обьявить
-
+//���� ���� ������ ���� � �����, ��� ��� ������� � ��� ��������� ������ ���������, �������� ���������
+//��������
 WSADATA wsd;
 SOCKET sockRaw;
 HOSTENT *hp = NULL;
@@ -74,14 +73,14 @@ int ret,
        fromlen = sizeof(from),
        done = 0,
        maxhops,
-       timeout = 10000;
+       timeout = 100;
 
 char *icmp_data,
        *recvbuf;
 BOOL bOpt;
 USHORT seq_no = 0;
 
-FILE *log; // Указатель на log файл
+FILE * fp; // ��������� �� log ����
 
 
 //
@@ -153,66 +152,66 @@ USHORT checksum(USHORT *buffer, int size) {
 
 
 int start(char *log) {
-   FILE *fp = fopen(log, "a+");
    char time_str[128] = "";
    int i = 0;
    int j = 0;
-   char info[100] = "     Status: start log ... \r"; //запись о состояни
+   char info[100] = "     Status: start log ... \r"; //������ � ���������
+   fp = fopen(log, "a+");
    if (fp != NULL)
    {
        time_t time_now = time(NULL);
        struct tm *newtime;
        newtime = localtime(&time_now);
        for (i; i < strlen(time_str); i++) {
-           /* записываем состояние в лог используя функцию fputc() */
+           /* ���������� ����� � ��� ��������� ������� fputc() */
            fputc(time_str[i], fp);
        }
        for (j; j < strlen(info); j++) {
-           /* записываем состояние в лог используя функцию fputc() */
+           /* ���������� ��������� � ��� ��������� ������� fputc() */
            fputc(info[j], fp);
        }
-       return 1; //Процедура возвращает 1 (Удалось открыть файл и произвести запись)
-   } else return 0;//Процедура возвращает 0 (Не удалось открыть файл)
+       return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
+   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
 }
 
+
 /**
-Синтаксический анализ
+�������������� ������
 @param ipAddress
-@return int 1-валидный ИП 0-неверный
+@return int 1-�������� �� 0-��������
 **/
 int analyze(char *ipAddress) {
    int i = 0;
    int count_point = 0;
-   for (i = 0; i < strlen(ipAddress); i++) //проверяем есть ли в ip символы не являющиеся цифрой или точкой, если есть то возвращаем 0
-
+   for (i = 0; i < strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
    {
        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.'))
            return 0;
    }
-   for (i = 0; i < strlen(ipAddress); i++) // Проверяем кол-во точек в IP
+   for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
    {
        if (ipAddress[i] == '.')
            count_point++;
    }
-   if (count_point != 3)// если больше 3 то возвращаем 0
+   if (count_point != 3)// ���� ������ 3 �� ���������� 0
        return 0;
-   for (i = 0; i < strlen(ipAddress); i++)//проверяем числа IP
+   for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
    {
        //string str = "";
        char str[10] = "";
        int p = 0;
-       for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// считываем октет IP
+       for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// ��������� ����� IP
            str[p] = ipAddress[i];
        }
        str[p] = '\0';
-       if (str[0] != '0') // проверяем является ли числом(не начинает ли число с ‘0’)
+       if (str[0] != '0') // ��������� �������� �� ������(�� �������� �� ����� � �0�)
        {
            int a = atoi(str);
-           if (a > 255)// если октет IP больше 255, то возвращаем 0
+           if (a > 255)// ���� ����� IP ������ 255, �� ���������� 0
                return 0;
-       } else return 0; //если число начинается с 0 то возвращаем 0
+       } else return 0; //���� ����� ���������� � 0 �� ���������� 0
    }
-   return 1;// возвращаем 1 если IP правильно введен
+   return 1;// ���������� 1 ���� IP ��������� ������
 }
 
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
@@ -247,57 +246,59 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
        case ICMP_DESTUNREACH:  // Can't reach the destination at all
            printf("%2d  %s  reports: Host is unreachable\n", ttl,
                   inet_ntoa(inaddr));
-           return 1;
+           return 2;
            break;
        default:
            printf("non-echo type %d recvd\n", icmphdr->i_type);
-           return 1;
+           return 2;
            break;
    }
 
 }
 
 /**
-Получает ответ от узла
-Все параметры кроме ттл - глобальные
-@param ttl Время жизни пакета
-@return int state (0 - ответ получен, 1 - достигнут конечный узел, 2 - ошибка получения)
+�������� ����� �� ����
+��� ��������� ����� ��� - ����������
+@param ttl ����� ����� ������
+@return int state (0 - ����� �������, 1 - ��������� �������� ����, 2 - ������ ���������)
 **/
-
 int receiveICMP(int ttl) {
 // Read a packet back from the destination or a router along
    // the way.
    //
+   int reply = 0;
    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen);
    if (ret == SOCKET_ERROR) {
        if (WSAGetLastError() == WSAETIMEDOUT) {
            printf("%2d  Receive Request timed out.\n", ttl);
        }
        printf("recvfrom() failed: %d\n", WSAGetLastError());
-       return -1;
+       return 2;
    }
    //
    // Decode the response to see if the ICMP response is from a
    // router along the way or whether it has reached the destination.
    //
    //  done = decode_resp(recvbuf, ret, &from, ttl);
-   done = getReply(recvbuf, ret, &from, ttl);
+   reply = getReply(recvbuf, ret, &from, ttl);
+   if (reply == 1) {
+       return 1;
+       }
    Sleep(100);
 
    return 0;
 }
 
 /**
-Отправка запроса
-Все нужные параметры - глобальные
-Для чего ip и лог - хз
-Можно ip можно юзать для вывода на экран
-@param char* ip Адрес конечного узла
-@param int ttl Время жизни пакета на текущем хопе
-@param char* log Название лог-файла
+�������� �������
+��� ������ ��������� - ����������
+��� ���� ip � ��� - ��
+����� ip ����� ����� ��� ������ �� �����
+@param char* ip ����� ��������� ����
+@param int ttl ����� ����� ������ �� ������� ����
+@param char* log �������� ���-�����
 @return none
 **/
-
 int sendRequest(char *ip, int ttl, FILE *log) {
    //
    // Send the ICMP packet to the destination
@@ -311,51 +312,48 @@ int sendRequest(char *ip, int ttl, FILE *log) {
        printf("sendto() failed: %d\n", WSAGetLastError());
        return -1;
    }
-
+    return 0;
 }
 
 /**
-Вывод результатов работы
-Закрывает прогу и лог-файл
-@param log название лог-файла
+����� ����������� ������
+��������� ����� � ���-����
+@param log �������� ���-�����
 @return none
 **/
-
-int finish(char *log) {
-   FILE *fp = fopen(log, "r+"); //Открытие существующего файла
-   char time_str[128] = ""; //Строка для сохранения преобразованного времени
+int finish(char * log) {
+   //FILE *fp = fopen(log, "r+"); //�������� ������������� �����
+   char time_str[128] = ""; //������ ��� ���������� ���������������� �������
    int i = 0;
-   char info[100] = "     Status: Close log ... \r";  //запись о состоянии
-   if (fp != NULL)// Если удалось открыть файл
+   char info[100] = "     Status: Close log ... \r"; //������ � ���������
+   if (fp != NULL)// ���� ������� ������� ����
    {
-       time_t time_now = time(NULL); //Считываем системное время
-       struct tm *newtime;  //Указатель на структуру с локальным временем
-       newtime = localtime(&time_now);//Преобразуем системное время в локальное
-       strftime(time_str, 128, "Date:  %x %A %X", newtime);//Преобразуем локальное время в текстовую строку
+       time_t time_now = time(NULL); //��������� ��������� �����
+       struct tm *newtime;  //��������� �� ��������� � ��������� ��������
+       newtime = localtime(&time_now); //����������� ��������� ����� � ���������
+       strftime(time_str, 128, "Date:  %x %A %X", newtime); //����������� ��������� ����� � ��������� ������
        for (i = 0; i < strlen(time_str); i++) {
-           /* записываем время в лог используя функцию fputc() */
+           /* ���������� ����� � ��� ��������� ������� fputc() */
            fputc(time_str[i], fp);
        }
 
        for (i = 0; i < strlen(info); i++) {
-           /* записываем время в лог используя функцию fputc() */
+           /* ���������� ��������� � ��� ��������� ������� fputc() */
            fputc(info[i], fp);
        }
- fclose(fp);//Закрываем файл
-       return 1; //Процедура возвращает 1 (Удалось открыть файл и произвести запись)
-   } else return 0; //Процедура возвращает 0 (Не удалось открыть файл)
+       fclose(fp);//��������� ����
+       return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
+   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
 }
 
-
 /**
-Диагностика кодов возврата
-Обработка ошибок системных
-Выводит ошибку текстом
-@param code системный код ошибки
-@param log название лог-файла
-@return errorText ошибка текстом для юзера
+����������� ����� ��������
+��������� ������ ���������
+������� ������ �������
+@param code ��������� ��� ������
+@param log �������� ���-�����
+@return errorText ������ ������� ��� �����
 **/
-
 int codeOS(FILE *log, int code) {  //printf(������� ������ � ���, �������� ����������);
    char errStr1[] = "�������� ����� �����, ��� ������ - 1";
    char errStr2[] = "�� ��, ��� � ��� 3? � ��, ��� ������ - 2";
@@ -396,84 +394,95 @@ int codeOS(FILE *log, int code) {  //printf(������� �����
 @return 1 - ������ ������� 0 - ������ ������
 @throw ������ ������
 **/
-int Print_log(char *log, char *ip, int code, int TTL) {
-   FILE *fp = fopen(log, "r+"); //�������� ������������� �����
-   char time_str[128] = ""; //������ ��� ���������� ���������������� �������
-   int i =0;
-   char info_TTL[100] = "     TTL set value "; //������ TTL
-   char info_1[100] = "     Status: Invalid IP address format \r"; //������ � ���������
-   char str_TTL[10] = "";
-   char end_r_TTL[] = "\r";
-   const char end_r[] = "\r";
-   char info_failed[100] = "     Status: Failed to connect \r"; //������ � ���������
-   char info[100] = "     Status: Acknowledgment IP address "; //������ � ���������
-   if (fp != NULL)// ���� ������� ������� ����
-   {
-       FILE *fp = fopen(log, "a+");//��������  ����� ��� ���������� ������
-       time_t time_now = time(NULL); //��������� ��������� �����
-       struct tm *newtime;  //��������� �� ��������� � ��������� ��������
-       newtime = localtime(&time_now); //����������� ��������� ����� � ���������
-       strftime(time_str, 128, "Date:  %x %A %X", newtime); //����������� ��������� ����� � ��������� ������
-       for (i = 0; i < strlen(time_str); i++) {
-           /* ���������� ����� � ��� ��������� ������� fputc() */
-           fputc(time_str[i], fp);
-       }
-       switch (code) {
-           case 1: //���� IP ����� ����� �������� ������
-           
-               for (i = 0; i < strlen(info); i++) {
-                   /* ���������� ��������� � ��� ��������� ������� fputc() */
-                   fputc(info_1[i], fp);
-               }
-               return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-           
-               break;
-           case 2: //�������� ����� �� �������������� IP(�� ��������� IP)
-           
-               itoa(TTL, str_TTL, 10);//TTL ����������� � char
-               strcat(info_TTL, str_TTL); // �������� TTL � info
-               strcat(info_TTL, end_r_TTL);// �������� ������� ������ � info
-               for (i = 0; i < strlen(info_TTL); i++) {
-                   /* ���������� �������� TTL � ��� ��������� ������� fputc() */
-                   fputc(info_TTL[i], fp);
-               }
-               for (i = 0; i < strlen(time_str); i++) {
-                   /* ���������� ����� � ��� ��������� ������� fputc() */
-                   fputc(time_str[i], fp);
-               }
-               strcat(info, ip); // �������� IP � info
-               strcat(info, end_r);// �������� ������� ������ � info
-               for (i = 0; i < strlen(info); i++) {
-                   /* ���������� ��������� � ��� ��������� ������� fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-           
-               break;
-           case 3: //������� ����������� �� ��������� IP
-           
-               strcat(info, ip);// �������� IP � info
-               strcat(info, end_r);// �������� ������� ������ � info
-               for (i = 0; i < strlen(info); i++) {
-                   /* ���������� ��������� � ��� ��������� ������� fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-           
-               break;
-           case 4:
-               for (i = 0; i < strlen(info); i++) {
-                   /* ���������� ��������� � ��� ��������� ������� fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-           
-               break;
-           default:
-               return 0; //��������� ���������� 0 (�������� ���)
-               break;
-       }
-   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
+int Print_log(char* log, char* ip, int code, int TTL) {
+
+    //FILE* fp = fopen(log, "r+");
+    int i;
+    //FILE* fp = fopen(log, "a+");
+    time_t time_now = time(NULL);
+    struct tm* newtime; 
+    char time_str [128];
+
+    newtime = localtime(&time_now);
+    strftime(time_str, 128, "Date:  %x %A %X", newtime); 
+
+    if (fp != NULL)
+    {
+        for (i = 0; i < strlen(time_str); i++) {
+
+            fputc(time_str[i], fp);
+        }
+        switch (code) {
+        case 1:
+        {
+            char info[100] = "     Status: Invalid IP address format \r";
+            for (i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 2:
+        {
+            char info_TTL[100] = "     TTL set value ";
+            char str_TTL[10] = "";
+            char* end_r_TTL = "\r";
+            char info[100] = "     Status: Acknowledgment IP address ";
+            char end_r[] = "\r";
+
+            itoa(TTL, str_TTL, 10);
+            strcat(info_TTL, str_TTL);
+
+            strcat(info_TTL, end_r_TTL);
+            for (i = 0; i < strlen(info_TTL); i++) {
+
+                fputc(info_TTL[i], fp);
+            }
+            for ( i = 0; i < strlen(time_str); i++) {
+
+                fputc(time_str[i], fp);
+            }
+
+            strcat(info, ip);
+            strcat(info, end_r);
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 3:
+        {
+            char info[100] = "     Status: Successfully connected IP address ";
+            char end_r[] = "\r";
+
+            strcat(info, ip);
+            strcat(info, end_r);
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 4: {
+            char info[100] = "     Status: Failed to connect \r";
+
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+              break;
+        default:
+            return 0;
+            break;
+        }
+    }
+    else return 0;
 }
 
 
@@ -521,12 +530,12 @@ void fill_icmp_data(char *icmp_data, int datasize) {
 
 
 int main(int argc, char *argv[]) {
-   char ip[15] = ""; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
+   char ip[15] = "192.168.10.1"; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
    char logName[50] = "log.txt"; //�������� ����� ��� ������������� � start()
    FILE * log;
    int ttl = 1;
    int code = 0;
-   strcat(ip, argv);
+  // strcat(ip, argv); TODO
    switch (start(logName)) {
        case 1: 
            switch (analyze(ip)) {
@@ -538,8 +547,8 @@ int main(int argc, char *argv[]) {
                        printf("WSAStartup() failed: %d\n", GetLastError());
                        return -1;
                    }
-                   if (argc < 2)
-                       usage(argv[0]);
+                //   if (argc < 2)
+                 //      usage(argv[0]);
                    if (argc == 3)
                        maxhops = atoi(argv[2]);
                    else
@@ -622,7 +631,7 @@ int main(int argc, char *argv[]) {
                    printf("\nTracing route to %s over a maximum of %d hops:\n\n", argv[1], maxhops);
 
 
-                   while (1) {
+                   while ((ttl < maxhops) && (!done)) {
                        int bwrote;
 
                        // Set the time to live option on the socket
@@ -642,11 +651,11 @@ int main(int argc, char *argv[]) {
                        sendRequest(ip, ttl, log); //�� ����� sendRequest ������ ������� recieveICMP
                        switch (receiveICMP(ttl)){ //���������� ����
                            case 0:
-
+                                code = 3;
                                switch (Print_log(logName, ip, code, ttl)) {
                                    case 1:
                                    
-                                       getreply();
+                                      // getReply(&buf, bytes, &from, ttl);
                                        break;
                                    
                                    case 0:
@@ -660,17 +669,19 @@ int main(int argc, char *argv[]) {
                            
 
                        case 1: //��������� �������� ����� ��� �������� �����
-                       
+                                                      code = 3;
                            switch (Print_log(logName, ip, code, ttl)){
                                case 1:
                                    finish(logName);
-                                   break;
+                                   done = 1;
+                                break;
 
                                case 0:
                                     code = 1;
                                     codeOS(log, code);
                                     finish(logName);
-                                    break;
+                                    done = 1;
+                                   break;
                            }
 
                            break;
@@ -690,8 +701,8 @@ int main(int argc, char *argv[]) {
                            break;
 
 
-                       ttl++;
                    }
+                   ttl++;
                } //����� analyze
            case 0:
                switch (Print_log(logName, ip, code, ttl)){
@@ -708,7 +719,7 @@ int main(int argc, char *argv[]) {
            }
            break;
            }
-       
+   break;
    case 0: //����� start
    
        code = 2;
