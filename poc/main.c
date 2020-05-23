@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #pragma pack(4)
 
@@ -11,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #pragma comment(lib, "ws2_32.lib")
 //
@@ -80,7 +80,7 @@ char *icmp_data,
 BOOL bOpt;
 USHORT seq_no = 0;
 
-FILE *log; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ log ï¿½ï¿½ï¿½ï¿½
+FILE * fp; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ log ï¿½ï¿½ï¿½ï¿½
 
 
 //
@@ -152,11 +152,11 @@ USHORT checksum(USHORT *buffer, int size) {
 
 
 int start(char *log) {
-   FILE *fp = fopen(log, "a+");
    char time_str[128] = "";
    int i = 0;
    int j = 0;
    char info[100] = "     Status: start log ... \r"; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+   fp = fopen(log, "a+");
    if (fp != NULL)
    {
        time_t time_now = time(NULL);
@@ -272,7 +272,7 @@ int receiveICMP(int ttl) {
            printf("%2d  Receive Request timed out.\n", ttl);
        }
        printf("recvfrom() failed: %d\n", WSAGetLastError());
-       return -1;
+       return 2;
    }
    //
    // Decode the response to see if the ICMP response is from a
@@ -308,7 +308,7 @@ int sendRequest(char *ip, int ttl, FILE *log) {
        printf("sendto() failed: %d\n", WSAGetLastError());
        return -1;
    }
-
+    return 0;
 }
 
 /**
@@ -317,8 +317,8 @@ int sendRequest(char *ip, int ttl, FILE *log) {
 @param log ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½-ï¿½ï¿½ï¿½ï¿½ï¿½
 @return none
 **/
-int finish(char *log) {
-   FILE *fp = fopen(log, "r+"); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
+int finish(char * log) {
+   //FILE *fp = fopen(log, "r+"); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
    char time_str[128] = ""; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
    int i = 0;
    char info[100] = "     Status: Close log ... \r"; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
@@ -390,84 +390,95 @@ int codeOS(FILE *log, int code) {  //printf(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿
 @return 1 - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0 - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 @throw ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 **/
-int Print_log(char *log, char *ip, int code, int TTL) {
-   FILE *fp = fopen(log, "r+"); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
-   char time_str[128] = ""; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-   int i =0;
-   char info_TTL[100] = "     TTL set value "; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ TTL
-   char info_1[100] = "     Status: Invalid IP address format \r"; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-   char str_TTL[10] = "";
-   char end_r_TTL[] = "\r";
-   const char end_r[] = "\r";
-   char info_failed[100] = "     Status: Failed to connect \r"; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-   char info[100] = "     Status: Acknowledgment IP address "; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-   if (fp != NULL)// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-   {
-       FILE *fp = fopen(log, "a+");//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-       time_t time_now = time(NULL); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
-       struct tm *newtime;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-       newtime = localtime(&time_now); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-       strftime(time_str, 128, "Date:  %x %A %X", newtime); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-       for (i = 0; i < strlen(time_str); i++) {
-           /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-           fputc(time_str[i], fp);
-       }
-       switch (code) {
-           case 1: //ï¿½ï¿½ï¿½ï¿½ IP ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-           
-               for (i = 0; i < strlen(info); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(info_1[i], fp);
-               }
-               return 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
-           
-               break;
-           case 2: //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP(ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP)
-           
-               itoa(TTL, str_TTL, 10);//TTL ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ char
-               strcat(info_TTL, str_TTL); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ TTL ï¿½ info
-               strcat(info_TTL, end_r_TTL);// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ info
-               for (i = 0; i < strlen(info_TTL); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ TTL ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(info_TTL[i], fp);
-               }
-               for (i = 0; i < strlen(time_str); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(time_str[i], fp);
-               }
-               strcat(info, ip); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP ï¿½ info
-               strcat(info, end_r);// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ info
-               for (i = 0; i < strlen(info); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
-           
-               break;
-           case 3: //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP
-           
-               strcat(info, ip);// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP ï¿½ info
-               strcat(info, end_r);// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ info
-               for (i = 0; i < strlen(info); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
-           
-               break;
-           case 4:
-               for (i = 0; i < strlen(info); i++) {
-                   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fputc() */
-                   fputc(info[i], fp);
-               }
-               return 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
-           
-               break;
-           default:
-               return 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
-               break;
-       }
-   } else return 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0 (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+int Print_log(char* log, char* ip, int code, int TTL) {
+
+    //FILE* fp = fopen(log, "r+");
+    int i;
+    //FILE* fp = fopen(log, "a+");
+    time_t time_now = time(NULL);
+    struct tm* newtime; 
+    char time_str [128];
+
+    newtime = localtime(&time_now);
+    strftime(time_str, 128, "Date:  %x %A %X", newtime); 
+
+    if (fp != NULL)
+    {
+        for (i = 0; i < strlen(time_str); i++) {
+
+            fputc(time_str[i], fp);
+        }
+        switch (code) {
+        case 1:
+        {
+            char info[100] = "     Status: Invalid IP address format \r";
+            for (i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 2:
+        {
+            char info_TTL[100] = "     TTL set value ";
+            char str_TTL[10] = "";
+            char* end_r_TTL = "\r";
+            char info[100] = "     Status: Acknowledgment IP address ";
+            char end_r[] = "\r";
+
+            itoa(TTL, str_TTL, 10);
+            strcat(info_TTL, str_TTL);
+
+            strcat(info_TTL, end_r_TTL);
+            for (i = 0; i < strlen(info_TTL); i++) {
+
+                fputc(info_TTL[i], fp);
+            }
+            for ( i = 0; i < strlen(time_str); i++) {
+
+                fputc(time_str[i], fp);
+            }
+
+            strcat(info, ip);
+            strcat(info, end_r);
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 3:
+        {
+            char info[100] = "     Status: Successfully connected IP address ";
+            char end_r[] = "\r";
+
+            strcat(info, ip);
+            strcat(info, end_r);
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+        break;
+        case 4: {
+            char info[100] = "     Status: Failed to connect \r";
+
+            for ( i = 0; i < strlen(info); i++) {
+
+                fputc(info[i], fp);
+            }
+            return 1;
+        }
+              break;
+        default:
+            return 0;
+            break;
+        }
+    }
+    else return 0;
 }
 
 
@@ -636,7 +647,7 @@ int main(int argc, char *argv[]) {
                        sendRequest(ip, ttl, log); //ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ sendRequest ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ recieveICMP
                        switch (receiveICMP(ttl)){ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                            case 0:
-
+                                code = 3;
                                switch (Print_log(logName, ip, code, ttl)) {
                                    case 1:
                                    
