@@ -655,7 +655,7 @@ int main(int argc, char *argv[]) {
 
                        case 1: //��������� �������� ����� ��� �������� �����
                        
-                           switch (Print_log(log)){
+                           switch (Print_log(logName, ip, code, ttl)){
                                case 1:
                                    finish(logName);
                                    break;
@@ -663,7 +663,7 @@ int main(int argc, char *argv[]) {
                                case 0:
                                     code = 1;
                                     codeOS(log, code);
-                                    finish(log);
+                                    finish(logName);
                                     break;
                            }
 
@@ -672,13 +672,13 @@ int main(int argc, char *argv[]) {
 
                        case 2: //������� ������
                            diagnosticError(log, code);
-                           switch (Print_log(log)) {
+                           switch (Print_log(logName, ip, code, ttl)) {
                                case 1:
-                                   finish(log);
+                                   finish(logName);
                                    break;
                               case 0:
                                codeOS(log, code);
-                               finish(log);
+                               finish(logName);
                                break;
                                }
                            break;
@@ -688,15 +688,15 @@ int main(int argc, char *argv[]) {
                    }
                } //����� analyze
            case 0:
-               switch (Print_log(log)){
+               switch (Print_log(logName, ip, code, ttl)){
                    case 1:
-                       finish(log);
+                       finish(logName);
                        break;
 
                case 0:
                    code = 1;
                    codeOS(log, code);
-                   finish(log);
+                   finish(logName);
                    break;
 
            }
@@ -707,7 +707,7 @@ int main(int argc, char *argv[]) {
    
        code = 2;
        codeOS(log, code);
-       finish(log);
+       finish(logName);
        break;
    }
    return 0;
