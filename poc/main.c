@@ -637,7 +637,7 @@ int main(int argc, char *argv[]) {
                        switch (receiveICMP(ttl)){ //���������� ����
                            case 0:
 
-                               switch (Print_log(log, ip, code, ttl)) {
+                               switch (Print_log(logName, ip, code, ttl)) {
                                    case 1:
                                    
                                        getreply();
@@ -647,7 +647,7 @@ int main(int argc, char *argv[]) {
 
                                        code = 3;
                                        codeOS(log, code);
-                                       finish(log);
+                                       finish(logName);
                                        break;
                                }
                                break;
@@ -657,7 +657,7 @@ int main(int argc, char *argv[]) {
                        
                            switch (Print_log(log)){
                                case 1:
-                                   finish(log);
+                                   finish(logName);
                                    break;
 
                                case 0:
