@@ -61,8 +61,9 @@ typedef struct _ihdr {
 #define DEF_PACKET_SIZE         32
 #define MAX_PACKET            1024
 
-//���� ���� ������ ���� � �����, ��� ��� ������� � ��� ��������� ������ ���������, �������� ���������
-//��������
+//этот блок должен быть в мейне, так как функции у нас принимают другие параметры, пришлось глобально
+//обьявить
+
 WSADATA wsd;
 SOCKET sockRaw;
 HOSTENT *hp = NULL;
@@ -80,7 +81,7 @@ char *icmp_data,
 BOOL bOpt;
 USHORT seq_no = 0;
 
-FILE *log; // ��������� �� log ����
+FILE *log; // Указатель на log файл
 
 
 //
@@ -156,62 +157,62 @@ int start(char *log) {
    char time_str[128] = "";
    int i = 0;
    int j = 0;
-   char info[100] = "     Status: start log ... \r"; //������ � ���������
+   char info[100] = "     Status: start log ... \r"; //запись о состояни
    if (fp != NULL)
    {
        time_t time_now = time(NULL);
        struct tm *newtime;
        newtime = localtime(&time_now);
        for (i; i < strlen(time_str); i++) {
-           /* ���������� ����� � ��� ��������� ������� fputc() */
+           /* записываем состояние в лог используя функцию fputc() */
            fputc(time_str[i], fp);
        }
        for (j; j < strlen(info); j++) {
-           /* ���������� ��������� � ��� ��������� ������� fputc() */
+           /* записываем состояние в лог используя функцию fputc() */
            fputc(info[j], fp);
        }
-       return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
+       return 1; //Процедура возвращает 1 (Удалось открыть файл и произвести запись)
+   } else return 0;//Процедура возвращает 0 (Не удалось открыть файл)
 }
 
-
 /**
-�������������� ������
+Синтаксический анализ
 @param ipAddress
-@return int 1-�������� �� 0-��������
+@return int 1-валидный ИП 0-неверный
 **/
 int analyze(char *ipAddress) {
    int i = 0;
    int count_point = 0;
-   for (i = 0; i < strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
+   for (i = 0; i < strlen(ipAddress); i++) //проверяем есть ли в ip символы не являющиеся цифрой или точкой, если есть то возвращаем 0
+
    {
        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.'))
            return 0;
    }
-   for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
+   for (i = 0; i < strlen(ipAddress); i++) // Проверяем кол-во точек в IP
    {
        if (ipAddress[i] == '.')
            count_point++;
    }
-   if (count_point != 3)// ���� ������ 3 �� ���������� 0
+   if (count_point != 3)// если больше 3 то возвращаем 0
        return 0;
-   for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
+   for (i = 0; i < strlen(ipAddress); i++)//проверяем числа IP
    {
        //string str = "";
        char str[10] = "";
        int p = 0;
-       for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// ��������� ����� IP
+       for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// считываем октет IP
            str[p] = ipAddress[i];
        }
        str[p] = '\0';
-       if (str[0] != '0') // ��������� �������� �� ������(�� �������� �� ����� � �0�)
+       if (str[0] != '0') // проверяем является ли числом(не начинает ли число с ‘0’)
        {
            int a = atoi(str);
-           if (a > 255)// ���� ����� IP ������ 255, �� ���������� 0
+           if (a > 255)// если октет IP больше 255, то возвращаем 0
                return 0;
-       } else return 0; //���� ����� ���������� � 0 �� ���������� 0
+       } else return 0; //если число начинается с 0 то возвращаем 0
    }
-   return 1;// ���������� 1 ���� IP ��������� ������
+   return 1;// возвращаем 1 если IP правильно введен
 }
 
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
@@ -257,11 +258,12 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
 }
 
 /**
-�������� ����� �� ����
-��� ��������� ����� ��� - ����������
-@param ttl ����� ����� ������
-@return int state (0 - ����� �������, 1 - ��������� �������� ����, 2 - ������ ���������)
+Получает ответ от узла
+Все параметры кроме ттл - глобальные
+@param ttl Время жизни пакета
+@return int state (0 - ответ получен, 1 - достигнут конечный узел, 2 - ошибка получения)
 **/
+
 int receiveICMP(int ttl) {
 // Read a packet back from the destination or a router along
    // the way.
@@ -286,15 +288,16 @@ int receiveICMP(int ttl) {
 }
 
 /**
-�������� �������
-��� ������ ��������� - ����������
-��� ���� ip � ��� - ��
-����� ip ����� ����� ��� ������ �� �����
-@param char* ip ����� ��������� ����
-@param int ttl ����� ����� ������ �� ������� ����
-@param char* log �������� ���-�����
+Отправка запроса
+Все нужные параметры - глобальные
+Для чего ip и лог - хз
+Можно ip можно юзать для вывода на экран
+@param char* ip Адрес конечного узла
+@param int ttl Время жизни пакета на текущем хопе
+@param char* log Название лог-файла
 @return none
 **/
+
 int sendRequest(char *ip, int ttl, FILE *log) {
    //
    // Send the ICMP packet to the destination
@@ -312,44 +315,47 @@ int sendRequest(char *ip, int ttl, FILE *log) {
 }
 
 /**
-����� ����������� ������
-��������� ����� � ���-����
-@param log �������� ���-�����
+Вывод результатов работы
+Закрывает прогу и лог-файл
+@param log название лог-файла
 @return none
 **/
+
 int finish(char *log) {
-   FILE *fp = fopen(log, "r+"); //�������� ������������� �����
-   char time_str[128] = ""; //������ ��� ���������� ���������������� �������
+   FILE *fp = fopen(log, "r+"); //Открытие существующего файла
+   char time_str[128] = ""; //Строка для сохранения преобразованного времени
    int i = 0;
-   char info[100] = "     Status: Close log ... \r"; //������ � ���������
-   if (fp != NULL)// ���� ������� ������� ����
+   char info[100] = "     Status: Close log ... \r";  //запись о состоянии
+   if (fp != NULL)// Если удалось открыть файл
    {
-       time_t time_now = time(NULL); //��������� ��������� �����
-       struct tm *newtime;  //��������� �� ��������� � ��������� ��������
-       newtime = localtime(&time_now); //����������� ��������� ����� � ���������
-       strftime(time_str, 128, "Date:  %x %A %X", newtime); //����������� ��������� ����� � ��������� ������
+       time_t time_now = time(NULL); //Считываем системное время
+       struct tm *newtime;  //Указатель на структуру с локальным временем
+       newtime = localtime(&time_now);//Преобразуем системное время в локальное
+       strftime(time_str, 128, "Date:  %x %A %X", newtime);//Преобразуем локальное время в текстовую строку
        for (i = 0; i < strlen(time_str); i++) {
-           /* ���������� ����� � ��� ��������� ������� fputc() */
+           /* записываем время в лог используя функцию fputc() */
            fputc(time_str[i], fp);
        }
 
        for (i = 0; i < strlen(info); i++) {
-           /* ���������� ��������� � ��� ��������� ������� fputc() */
+           /* записываем время в лог используя функцию fputc() */
            fputc(info[i], fp);
        }
-       fclose(fp);//��������� ����
-       return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
+ fclose(fp);//Закрываем файл
+       return 1; //Процедура возвращает 1 (Удалось открыть файл и произвести запись)
+   } else return 0; //Процедура возвращает 0 (Не удалось открыть файл)
 }
 
+
 /**
-����������� ����� ��������
-��������� ������ ���������
-������� ������ �������
-@param code ��������� ��� ������
-@param log �������� ���-�����
-@return errorText ������ ������� ��� �����
+Диагностика кодов возврата
+Обработка ошибок системных
+Выводит ошибку текстом
+@param code системный код ошибки
+@param log название лог-файла
+@return errorText ошибка текстом для юзера
 **/
+
 int codeOS(FILE *log, int code) {  //printf(������� ������ � ���, �������� ����������);
    char errStr1[] = "�������� ����� �����, ��� ������ - 1";
    char errStr2[] = "�� ��, ��� � ��� 3? � ��, ��� ������ - 2";
