@@ -515,12 +515,12 @@ void fill_icmp_data(char *icmp_data, int datasize) {
 
 
 int main(int argc, char *argv[]) {
-   char ip[15] = ""; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
+   char ip[15] = "8.8.8.8"; //������ �������� - ip; TODO: ������� �������� �� ������� ����������
    char logName[50] = "log.txt"; //�������� ����� ��� ������������� � start()
    FILE * log;
    int ttl = 1;
    int code = 0;
-   strcat(ip, argv);
+  // strcat(ip, argv); TODO
    switch (start(logName)) {
        case 1: 
            switch (analyze(ip)) {
@@ -532,8 +532,8 @@ int main(int argc, char *argv[]) {
                        printf("WSAStartup() failed: %d\n", GetLastError());
                        return -1;
                    }
-                   if (argc < 2)
-                       usage(argv[0]);
+                //   if (argc < 2)
+                 //      usage(argv[0]);
                    if (argc == 3)
                        maxhops = atoi(argv[2]);
                    else
