@@ -640,7 +640,7 @@ int main(int argc, char *argv[]) {
                                switch (Print_log(logName, ip, code, ttl)) {
                                    case 1:
                                    
-                                       getreply();
+                                      // getReply(&buf, bytes, &from, ttl);
                                        break;
                                    
                                    case 0:
