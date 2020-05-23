@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 
 #pragma pack(4)
@@ -270,6 +270,7 @@ int receiveICMP(int ttl) {
 // Read a packet back from the destination or a router along
    // the way.
    //
+   int reply = 0;
    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen);
    if (ret == SOCKET_ERROR) {
        if (WSAGetLastError() == WSAETIMEDOUT) {
@@ -283,8 +284,8 @@ int receiveICMP(int ttl) {
    // router along the way or whether it has reached the destination.
    //
    //  done = decode_resp(recvbuf, ret, &from, ttl);
-   done = getReply(recvbuf, ret, &from, ttl);
-   if (done == 1) {
+   reply = getReply(recvbuf, ret, &from, ttl);
+   if (reply == 1) {
        return 1;
        }
    Sleep(100);
@@ -539,7 +540,6 @@ void fill_icmp_data(char *icmp_data, int datasize) {
 
 int main(int argc, char *argv[]) {
    char ip[15] = "192.168.10.1"; //первый аргумент - ip; TODO: сделать проверку на наличие аргументов…
-   strcat(ip, argv);
    char logName[50] = "log.txt"; //название файла для инициализации в start()
    FILE * log;
    int ttl = 1;
@@ -640,7 +640,7 @@ int main(int argc, char *argv[]) {
                    printf("\nTracing route to %s over a maximum of %d hops:\n\n", argv[1], maxhops);
 
 
-                   while (1) {
+                   while ((ttl < maxhops) && (!done)) {
                        int bwrote;
 
                        // Set the time to live option on the socket
@@ -678,16 +678,18 @@ int main(int argc, char *argv[]) {
                            
 
                        case 1: //Достигнут конечный пункт или превышен лимит
-                       
+                       code = 3;
                            switch (Print_log(logName, ip, code, ttl)){
                                case 1:
                                    finish(logName);
+				done = 1;
                                    break;
 
                                case 0:
                                     code = 1;
                                     codeOS(log, code);
                                     finish(logName);
+					done = 1;
                                     break;
                            }
 
