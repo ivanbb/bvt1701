@@ -28,6 +28,7 @@ int start(char *log) {
        time_t time_now = time(NULL);
        struct tm *newtime;
        newtime = localtime(&time_now);
+	   strftime(time_str, 128, "Date:  %x %A %X", newtime); //Преобразуем локальное время в текстовую строку
        for (i; i < strlen(time_str); i++) {
            /* ���������� ����� � ��� ��������� ������� fputc() */
            fputc(time_str[i], fp);
@@ -91,7 +92,7 @@ void analyze(char *ipAddress) {
        }
    }
    if (hasError == 1) {
-    printLog("Invalid adress error");
+    printLog("     Invalid adress error\r");
     printf("Invalid adress error\n");
     finish();
    }
@@ -103,7 +104,7 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
    unsigned short iphdrlen;
    struct hostent *lpHostent = NULL;
    struct in_addr inaddr = from->sin_addr;
-
+char time_str[128];
    iphdr = (IpHeader *) buf;
    // Number of 32-bit words * 4 = bytes
    iphdrlen = iphdr->h_len * 4;
@@ -119,8 +120,10 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
        case ICMP_ECHOREPLY:     // Response from destination
            lpHostent = gethostbyaddr((const char *) &from->sin_addr, AF_INET, sizeof(struct in_addr));
            if (lpHostent != NULL)
+		   {
                printf("%2d  %s (%s)\n", ttl, lpHostent->h_name,
                       inet_ntoa(inaddr));
+		   }
            return 1;
            break;
        case ICMP_TIMEOUT:      // Response from router along the way
@@ -308,7 +311,9 @@ int main(int argc, char *argv[]) {
    char logName[50] = "log.txt"; //название файла для инициализации в start()   FILE * log;
    int ttl = 1;
    int code = 0;
-
+	
+	
+	
    if (argc < 2) {
        usage(argv[0]);
    }
@@ -332,6 +337,11 @@ int main(int argc, char *argv[]) {
     createSocket(ip);
 
    while ((ttl < maxhops) && (!done)) {
+					char info_TTL[100] = "     Status: TTL set value "; //запись TTL
+					char str_TTL[10]="";
+					char end_r_TTL[] = "\r";
+					char info[100] = "     Status: Status: Acknowledgment IP address "; //запись о состоянии 
+					char end_r[] = "\r";
                        int bwrote;
                        //
                        // Set the time to live option on the socket
@@ -346,20 +356,25 @@ int main(int argc, char *argv[]) {
 
                        ((IcmpHeader *) icmp_data)->i_seq = seq_no++;
                        ((IcmpHeader *) icmp_data)->i_cksum = checksum((USHORT *) icmp_data, datasize);
-
-
                        code = sendRequest(ip, ttl); //�� ����� sendRequest ������ ������� recieveICMP
-
                        switch(code){
-                           case 0:
+                           case 0:	
+								itoa(ttl, str_TTL, 10); //TTL преобразуем в char
+								strcat(info_TTL, str_TTL); // добавили TTL в info
+								strcat(info_TTL, end_r_TTL);// добавили переход строки в info
+								printLog(info_TTL);
+								strcat(info, ip); // добавили IP в info
+								strcat(info, end_r);// добавили переход строки в info
+								printLog(info);						   
                               ttl++;
                               break;
                            case 1:
-                              printLog("Traceroute complete succesfully");
+                              printLog("     Traceroute complete succesfully \r");
+							  finish();
                               done = 1;
                               break;
                            default:
-                              diagnosticError(WSAGetLastError());
+                           // diagnosticError(WSAGetLastError());
                               finish();
                               break;
                        }
