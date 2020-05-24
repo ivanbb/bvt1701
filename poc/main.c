@@ -53,17 +53,22 @@ void analyze(char *ipAddress) {
    int i = 0;
    int count_point = 0;
    int hasError = 0;
+   
+   for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
+   {
+       if (ipAddress[i] == '.')
+           count_point++;
+   }
+   if (count_point == 1)// ���� ������ 3 �� ���������� 0
+           return ;
+   
    for (i = 0; i < strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
    {
        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.')) {
             hasError = 1;
        }
    }
-   for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
-   {
-       if (ipAddress[i] == '.')
-           count_point++;
-   }
+   
    if (count_point != 3)// ���� ������ 3 �� ���������� 0
            hasError = 1;
    for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
