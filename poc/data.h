@@ -1,3 +1,6 @@
+/**
+Defines all global data
+**/
 //
 // Defines for ICMP message types
 //
@@ -52,7 +55,7 @@ WSADATA wsd;
 SOCKET sockRaw;
 HOSTENT *hp = NULL;
 SOCKADDR_IN dest,
-       from;
+                from;
 int ret,
        datasize,
        fromlen = sizeof(from),
@@ -62,6 +65,7 @@ int ret,
 
 char *icmp_data,
        *recvbuf;
+       
 BOOL bOpt;
 USHORT seq_no = 0;
 
