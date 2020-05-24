@@ -84,5 +84,81 @@ void fill_icmp_data(char *icmp_data, int datasize) {
    memset(datapart, 'E', datasize - sizeof(IcmpHeader));
 }
 
+int createSocket(char * ip){
+        //
+    // Create a raw socket that will be used to send the ICMP
+    // packets to the remote host you want to ping
+    //
+                   sockRaw = WSASocket(AF_INET, SOCK_RAW, IPPROTO_ICMP, NULL, 0, WSA_FLAG_OVERLAPPED);
+                   if (sockRaw == INVALID_SOCKET) {
+                       printf("WSASocket() failed: %d\n", WSAGetLastError());
+                       ExitProcess(-1);
+                   }
+                   //
+                   // Set the receive and send timeout values to a second
+                   //
 
+                   ret = setsockopt(sockRaw, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
+                   if (ret == SOCKET_ERROR) {
+                       printf("setsockopt(SO_RCVTIMEO) failed: %d\n",
+                              WSAGetLastError());
+                       return -1;
+                   }
 
+                   ret = setsockopt(sockRaw, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof(timeout));
+                   if (ret == SOCKET_ERROR) {
+                       printf("setsockopt(SO_SNDTIMEO) failed: %d\n",
+                              WSAGetLastError());
+                       return -1;
+                   }
+
+                   ZeroMemory(&dest, sizeof(dest));
+                   //
+                   // We need to resolve the host's ip address.  We check to see
+                   // if it is an actual Internet name versus an dotted decimal
+                   // IP address string.
+                   //
+                   dest.sin_family = AF_INET;
+                   if ((dest.sin_addr.s_addr = inet_addr(ip)) == INADDR_NONE) {
+                       hp = gethostbyname(ip);
+                       if (hp)
+                           memcpy(&(dest.sin_addr), hp->h_addr, hp->h_length);
+                       else {
+                           printf("Unable to resolve %s\n", ip);
+                           ExitProcess(-1);
+                       }
+                   }
+                   //
+                   // Set the data size to the default packet size.
+                   // We don't care about the data since this is just traceroute/ping
+                   //
+                   datasize = DEF_PACKET_SIZE;
+
+                   datasize += sizeof(IcmpHeader);
+                   //
+                   // Allocate the sending and receiving buffers for ICMP packets
+                   //
+                   icmp_data = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_PACKET);
+                   recvbuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_PACKET);
+
+                   if ((!icmp_data) || (!recvbuf)) {
+                       printf("HeapAlloc() failed %d\n", GetLastError());
+                       return -1;
+                   }
+                   // Set the socket to bypass the standard routing mechanisms
+                   //  i.e. use the local protocol stack to the appropriate network
+                   //       interface
+                  //
+                   bOpt = TRUE;
+                   if (setsockopt(sockRaw, SOL_SOCKET, SO_DONTROUTE, (char *) &bOpt, sizeof(BOOL)) == SOCKET_ERROR)
+                       printf("setsockopt(SO_DONTROUTE) failed: %d\n", WSAGetLastError());
+
+                   //
+                   // Here we are creating and filling in an ICMP header that is the
+                   // core of trace route.
+                   //
+                   memset(icmp_data, 0, MAX_PACKET);
+                   fill_icmp_data(icmp_data, datasize);
+
+                   printf("\nTracing route to %s over a maximum of %d hops:\n\n", ip, maxhops);
+    }

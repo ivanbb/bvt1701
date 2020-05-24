@@ -37,7 +37,10 @@ int start(char *log) {
            fputc(info[j], fp);
        }
        return 1; //��������� ���������� 1 (������� ������� ���� � ���������� ������)
-   } else return 0; //��������� ���������� 0 (�� ������� ������� ����)
+   } else {
+     //codeOS(FILE *log, int code); TODO
+     return 0; //��������� ���������� 0 (�� ������� ������� ����)
+   }
 }
 
 
@@ -49,10 +52,11 @@ int start(char *log) {
 int analyze(char *ipAddress) {
    int i = 0;
    int count_point = 0;
+   
    for (i = 0; i < strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
    {
        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.'))
-           return 0;
+           printLog("Invalid adress error");
    }
    for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
    {
@@ -60,7 +64,7 @@ int analyze(char *ipAddress) {
            count_point++;
    }
    if (count_point != 3)// ���� ������ 3 �� ���������� 0
-       return 0;
+       printLog("Invalid adress error");
    for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
    {
        //string str = "";
@@ -74,10 +78,12 @@ int analyze(char *ipAddress) {
        {
            int a = atoi(str);
            if (a > 255)// ���� ����� IP ������ 255, �� ���������� 0
-               return 0;
-       } else return 0; //���� ����� ���������� � 0 �� ���������� 0
+               printLog("Invalid adress error");
+       } else {
+           printLog("Invalid adress error"); //���� ����� ���������� � 0 �� ���������� 0
+       }
    }
-   return 1;// ���������� 1 ���� IP ��������� ������
+   finish();// ���������� 1 ���� IP ��������� ������
 }
 
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
@@ -103,23 +109,22 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
            if (lpHostent != NULL)
                printf("%2d  %s (%s)\n", ttl, lpHostent->h_name,
                       inet_ntoa(inaddr));
-           return 1;
+           printLog("Traceroute complet succesfully");
+           finish();
+           done = 1;
            break;
        case ICMP_TIMEOUT:      // Response from router along the way
            printf("%2d  %s\n", ttl, inet_ntoa(inaddr));
-           return 0;
            break;
        case ICMP_DESTUNREACH:  // Can't reach the destination at all
            printf("%2d  %s  reports: Host is unreachable\n", ttl,
                   inet_ntoa(inaddr));
-           return 2;
            break;
        default:
            printf("non-echo type %d recvd\n", icmphdr->i_type);
-           return 2;
            break;
    }
-
+   return 0;
 }
 
 /**
@@ -146,10 +151,7 @@ int receiveICMP(int ttl) {
    // router along the way or whether it has reached the destination.
    //
    //  done = decode_resp(recvbuf, ret, &from, ttl);
-   reply = getReply(recvbuf, ret, &from, ttl);
-   if (reply == 1) {
-       return 1;
-       }
+   getReply(recvbuf, ret, &from, ttl);
    Sleep(100);
 
    return 0;
@@ -165,7 +167,7 @@ int receiveICMP(int ttl) {
 @param char* log �������� ���-�����
 @return none
 **/
-int sendRequest(char *ip, int ttl, FILE *log) {
+int sendRequest(char *ip, int ttl) {
    //
    // Send the ICMP packet to the destination
    //
@@ -178,7 +180,8 @@ int sendRequest(char *ip, int ttl, FILE *log) {
        printf("sendto() failed: %d\n", WSAGetLastError());
        return -1;
    }
-    return 0;
+   receiveICMP(ttl);
+    
 }
 
 /**
@@ -187,7 +190,7 @@ int sendRequest(char *ip, int ttl, FILE *log) {
 @param log �������� ���-�����
 @return none
 **/
-int finish(char * log) {
+int finish() {
    //FILE *fp = fopen(log, "r+"); //�������� ������������� �����
    char time_str[128] = ""; //������ ��� ���������� ���������������� �������
    int i = 0;
@@ -260,11 +263,8 @@ int codeOS(FILE *log, int code) {  //printf(������� �����
 @return 1 - ������ ������� 0 - ������ ������
 @throw ������ ������
 **/
-int Print_log(char* log, char* ip, int code, int TTL) {
-
-    //FILE* fp = fopen(log, "r+");
+int printLog(char* log) {
     int i;
-    //FILE* fp = fopen(log, "a+");
     time_t time_now = time(NULL);
     struct tm* newtime; 
     char time_str [128];
@@ -274,81 +274,11 @@ int Print_log(char* log, char* ip, int code, int TTL) {
 
     if (fp != NULL)
     {
-        for (i = 0; i < strlen(time_str); i++) {
-
-            fputc(time_str[i], fp);
-        }
-        switch (code) {
-        case 1:
-        {
-            char info[100] = "     Status: Invalid IP address format \r";
-            for (i = 0; i < strlen(info); i++) {
-
-                fputc(info[i], fp);
-            }
-            return 1;
-        }
-        break;
-        case 2:
-        {
-            char info_TTL[100] = "     TTL set value ";
-            char str_TTL[10] = "";
-            char* end_r_TTL = "\r";
-            char info[100] = "     Status: Acknowledgment IP address ";
-            char end_r[] = "\r";
-
-            itoa(TTL, str_TTL, 10);
-            strcat(info_TTL, str_TTL);
-
-            strcat(info_TTL, end_r_TTL);
-            for (i = 0; i < strlen(info_TTL); i++) {
-
-                fputc(info_TTL[i], fp);
-            }
-            for ( i = 0; i < strlen(time_str); i++) {
-
-                fputc(time_str[i], fp);
-            }
-
-            strcat(info, ip);
-            strcat(info, end_r);
-            for ( i = 0; i < strlen(info); i++) {
-
-                fputc(info[i], fp);
-            }
-            return 1;
-        }
-        break;
-        case 3:
-        {
-            char info[100] = "     Status: Successfully connected IP address ";
-            char end_r[] = "\r";
-
-            strcat(info, ip);
-            strcat(info, end_r);
-            for ( i = 0; i < strlen(info); i++) {
-
-                fputc(info[i], fp);
-            }
-            return 1;
-        }
-        break;
-        case 4: {
-            char info[100] = "     Status: Failed to connect \r";
-
-            for ( i = 0; i < strlen(info); i++) {
-
-                fputc(info[i], fp);
-            }
-            return 1;
-        }
-              break;
-        default:
-            return 0;
-            break;
-        }
+        return 0;
     }
-    else return 0;
+    else{
+         //codeOS();
+    }
 }
 
 
@@ -375,108 +305,30 @@ int diagnosticError(FILE *log, int code) {
 }
 
 int main(int argc, char *argv[]) {
-   char ip[15] = "192.168.10.1"; //первый аргумент - ip; TODO: сделать проверку на наличие аргументов…
-   char logName[50] = "log.txt"; //название файла для инициализации в start()
-   FILE * log;
+   char ip[15] = ""; //первый аргумент - ip; TODO: сделать проверку на наличие аргументов…
+   char logName[50] = "log.txt"; //название файла для инициализации в start()   FILE * log;
    int ttl = 1;
    int code = 0;
-  // strcat(ip, argv); TODO
-   switch (start(logName)) {
-       case 1: 
-           switch (analyze(ip)) {
-               case 1: 
+   strcat(ip, argv[1]);
+   start(logName);
+   analyze(ip);
 
-                   // Initialize the Winsock2 DLL
+                      // Initialize the Winsock2 DLL
                    //
-                   if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
-                       printf("WSAStartup() failed: %d\n", GetLastError());
-                       return -1;
-                   }
-                //   if (argc < 2)
-                 //      usage(argv[0]);
-                   if (argc == 3)
-                       maxhops = atoi(argv[2]);
-                   else
-                       maxhops = MAX_HOPS;
-                   //
-                   // Create a raw socket that will be used to send the ICMP
-                   // packets to the remote host you want to ping
-                   //
-                   sockRaw = WSASocket(AF_INET, SOCK_RAW, IPPROTO_ICMP, NULL, 0, WSA_FLAG_OVERLAPPED);
-                   if (sockRaw == INVALID_SOCKET) {
-                       printf("WSASocket() failed: %d\n", WSAGetLastError());
-                       ExitProcess(-1);
-                   }
-                   //
-                   // Set the receive and send timeout values to a second
-                   //
+    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
+        printf("WSAStartup() failed: %d\n", GetLastError());
+        return -1;
+    }
+    //   if (argc < 2)
+    //      usage(argv[0]);
+    if (argc == 3)
+        maxhops = atoi(argv[2]);
+    else
+        maxhops = MAX_HOPS;
 
-                   ret = setsockopt(sockRaw, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
-                   if (ret == SOCKET_ERROR) {
-                       printf("setsockopt(SO_RCVTIMEO) failed: %d\n",
-                              WSAGetLastError());
-                       return -1;
-                   }
+    createSocket(ip);
 
-                   ret = setsockopt(sockRaw, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof(timeout));
-                   if (ret == SOCKET_ERROR) {
-                       printf("setsockopt(SO_SNDTIMEO) failed: %d\n",
-                              WSAGetLastError());
-                       return -1;
-                   }
-
-                   ZeroMemory(&dest, sizeof(dest));
-                   //
-                   // We need to resolve the host's ip address.  We check to see
-                   // if it is an actual Internet name versus an dotted decimal
-                   // IP address string.
-                   //
-                   dest.sin_family = AF_INET;
-                   if ((dest.sin_addr.s_addr = inet_addr(argv[1])) == INADDR_NONE) {
-                       hp = gethostbyname(argv[1]);
-                       if (hp)
-                           memcpy(&(dest.sin_addr), hp->h_addr, hp->h_length);
-                       else {
-                           printf("Unable to resolve %s\n", argv[1]);
-                           ExitProcess(-1);
-                       }
-                   }
-                   //
-                   // Set the data size to the default packet size.
-                   // We don't care about the data since this is just traceroute/ping
-                   //
-                   datasize = DEF_PACKET_SIZE;
-
-                   datasize += sizeof(IcmpHeader);
-                   //
-                   // Allocate the sending and receiving buffers for ICMP packets
-                   //
-                   icmp_data = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_PACKET);
-                   recvbuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_PACKET);
-
-                   if ((!icmp_data) || (!recvbuf)) {
-                       printf("HeapAlloc() failed %d\n", GetLastError());
-                       return -1;
-                   }
-                   // Set the socket to bypass the standard routing mechanisms
-                   //  i.e. use the local protocol stack to the appropriate network
-                   //       interface
-                   //
-                   bOpt = TRUE;
-                   if (setsockopt(sockRaw, SOL_SOCKET, SO_DONTROUTE, (char *) &bOpt, sizeof(BOOL)) == SOCKET_ERROR)
-                       printf("setsockopt(SO_DONTROUTE) failed: %d\n", WSAGetLastError());
-
-                   //
-                   // Here we are creating and filling in an ICMP header that is the
-                   // core of trace route.
-                   //
-                   memset(icmp_data, 0, MAX_PACKET);
-                   fill_icmp_data(icmp_data, datasize);
-
-                   printf("\nTracing route to %s over a maximum of %d hops:\n\n", argv[1], maxhops);
-
-
-                   while ((ttl < maxhops) && (!done)) {
+   while ((ttl < maxhops) && (!done)) {
                        int bwrote;
 
                        // Set the time to live option on the socket
@@ -493,84 +345,8 @@ int main(int argc, char *argv[]) {
                        ((IcmpHeader *) icmp_data)->i_cksum = checksum((USHORT *) icmp_data, datasize);
 
 
-                       sendRequest(ip, ttl, log); //�� ����� sendRequest ������ ������� recieveICMP
-                       switch (receiveICMP(ttl)){ //���������� ����
-                           case 0:
-                                code = 3;
-                               switch (Print_log(logName, ip, code, ttl)) {
-                                   case 1:
-                                   
-                                      // getReply(&buf, bytes, &from, ttl);
-                                       break;
-                                   
-                                   case 0:
-
-                                       code = 3;
-                                       codeOS(log, code);
-                                       finish(logName);
-                                       break;
-                               }
-                               break;
-                           
-
-                       case 1: //Достигнут конечный пункт или превышен лимит
-                       code = 3;
-                           switch (Print_log(logName, ip, code, ttl)){
-                               case 1:
-                                   finish(logName);
-                                done = 1;
-                                   break;
-
-                               case 0:
-                                    code = 1;
-                                    codeOS(log, code);
-                                    finish(logName);
-                                    done = 1;
-                                   break;
-                           }
-
-                           break;
-                       
-
-                       case 2: //������� ������
-                           diagnosticError(log, code);
-                           switch (Print_log(logName, ip, code, ttl)) {
-                               case 1:
-                                   finish(logName);
-                                   break;
-                              case 0:
-                               codeOS(log, code);
-                               finish(logName);
-                               break;
-                               }
-                           break;
-
-
-                   }
-                   ttl++;
-               } //����� analyze
-           case 0:
-               switch (Print_log(logName, ip, code, ttl)){
-                   case 1:
-                       finish(logName);
-                       break;
-
-               case 0:
-                   code = 1;
-                   codeOS(log, code);
-                   finish(logName);
-                   break;
-
-           }
-           break;
-           }
-   break;
-   case 0: //����� start
-   
-       code = 2;
-       codeOS(log, code);
-       finish(logName);
-       break;
+                       sendRequest(ip, ttl); //�� ����� sendRequest ������ ������� recieveICMP
+                       ttl++;
    }
    return 0;
 }
