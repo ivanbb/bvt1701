@@ -49,8 +49,9 @@ typedef struct _ihdr {
 #define DEF_PACKET_SIZE         32
 #define MAX_PACKET            1024
 
-//���� ���� ������ ���� � �����, ��� ��� ������� � ��� ��������� ������ ���������, �������� ���������
-//��������
+//
+// Global variable
+//
 WSADATA wsd;
 SOCKET sockRaw;
 HOSTENT *hp = NULL;
@@ -69,5 +70,10 @@ char *icmp_data,
 BOOL bOpt;
 USHORT seq_no = 0;
 
-FILE * fp; // ��������� �� log ����
+FILE * fp; // Pointer to the log file
 
+//
+// Functions
+//
+int printLog(char* text_prihodit);
+void finish();
