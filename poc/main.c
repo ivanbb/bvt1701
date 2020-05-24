@@ -12,143 +12,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "data.h"
+#include "network.h"
 #pragma comment(lib, "ws2_32.lib")
-//
-// Defines for ICMP message types
-//
-#define ICMP_ECHOREPLY      0
-#define ICMP_DESTUNREACH    3
-#define ICMP_SRCQUENCH      4
-#define ICMP_REDIRECT       5
-#define ICMP_ECHO           8
-#define ICMP_TIMEOUT       11
-#define ICMP_PARMERR       12
-
-#define MAX_HOPS           30
-
-#define ICMP_MIN 8    // Minimum 8 byte icmp packet (just header)
-
-//
-// IP Header
-//
-typedef struct iphdr {
-   unsigned int h_len:4;        // Length of the header
-   unsigned int version:4;      // Version of IP
-   unsigned char tos;            // Type of service
-   unsigned short total_len;      // Total length of the packet
-   unsigned short ident;          // Unique identifier
-   unsigned short frag_and_flags; // Flags
-   unsigned char ttl;            // Time to live
-   unsigned char proto;          // Protocol (TCP, UDP etc)
-   unsigned short checksum;       // IP checksum
-   unsigned int sourceIP;       // Source IP
-   unsigned int destIP;         // Destination IP
-} IpHeader;
-
-//
-// ICMP header
-//
-typedef struct _ihdr {
-   BYTE i_type;               // ICMP message type
-   BYTE i_code;               // Sub code
-   USHORT i_cksum;
-   USHORT i_id;                 // Unique id
-   USHORT i_seq;                // Sequence number
-   // This is not the std header, but we reserve space for time
-   ULONG timestamp;
-} IcmpHeader;
-
-#define DEF_PACKET_SIZE         32
-#define MAX_PACKET            1024
-
-//���� ���� ������ ���� � �����, ��� ��� ������� � ��� ��������� ������ ���������, �������� ���������
-//��������
-WSADATA wsd;
-SOCKET sockRaw;
-HOSTENT *hp = NULL;
-SOCKADDR_IN dest,
-       from;
-int ret,
-       datasize,
-       fromlen = sizeof(from),
-       done = 0,
-       maxhops,
-       timeout = 100;
-
-char *icmp_data,
-       *recvbuf;
-BOOL bOpt;
-USHORT seq_no = 0;
-
-FILE * fp; // ��������� �� log ����
-
-
-//
-// Function: usage
-//
-// Description:
-//    Print usage information
-//
-void usage(char *progname) {
-   printf("usage: %s host-name [max-hops]\n", progname);
-   ExitProcess(-1);
-}
-
-//
-// Function: set_ttl
-//
-// Description:
-//    Set the time to live parameter on the socket. This controls
-//    how far the packet will be forwared before a "timeout"
-//    response will be sent back to us. This way we can see all
-//    the hops along the way to the destination.
-//
-int set_ttl(SOCKET s, int nTimeToLive) {
-   int nRet;
-
-   nRet = setsockopt(s, IPPROTO_IP, IP_TTL, (LPSTR) &nTimeToLive, sizeof(int));
-
-   if (nRet == SOCKET_ERROR) {
-       printf("setsockopt(IP_TTL) failed: %d\n", WSAGetLastError());
-       return 0;
-   }
-   return 1;
-}
-
-//
-// Function: decode_resp
-//
-// Description:
-//    The response is an IP packet. We must decode the IP header
-//    to locate the ICMP data.
-//
-int decode_resp(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
-   return 0;
-}
-
-//
-// Function: checksum
-//
-// Description:
-//    This function calculates the checksum for the ICMP header
-//    which is a necessary field since we are building packets by
-//    hand. Normally, the TCP layer handles all this when you do
-//    sockets, but ICMP is at a somewhat lower level.
-//
-USHORT checksum(USHORT *buffer, int size) {
-   unsigned long cksum = 0;
-
-   while (size > 1) {
-       cksum += *buffer++;
-       size -= sizeof(USHORT);
-   }
-   if (size)
-       cksum += *(UCHAR *) buffer;
-   cksum = (cksum >> 16) + (cksum & 0xffff);
-   cksum += (cksum >> 16);
-
-   return (USHORT) (~cksum);
-}
 
 
 int start(char *log) {
@@ -508,27 +374,6 @@ int diagnosticError(FILE *log, int code) {
    return 0;
 }
 
-void fill_icmp_data(char *icmp_data, int datasize) {
-   IcmpHeader *icmp_hdr;
-   char *datapart;
-
-   icmp_hdr = (IcmpHeader *) icmp_data;
-
-   icmp_hdr->i_type = ICMP_ECHO;
-   icmp_hdr->i_code = 0;
-   icmp_hdr->i_id = (USHORT) GetCurrentProcessId();
-   icmp_hdr->i_cksum = 0;
-   icmp_hdr->i_seq = 0;
-
-   datapart = icmp_data + sizeof(IcmpHeader);
-   //
-   // Place some junk in the buffer. Don't care about the data...
-   //
-   memset(datapart, 'E', datasize - sizeof(IcmpHeader));
-}
-
-
-
 int main(int argc, char *argv[]) {
    char ip[15] = "192.168.10.1"; //первый аргумент - ip; TODO: сделать проверку на наличие аргументов…
    char logName[50] = "log.txt"; //название файла для инициализации в start()
@@ -673,7 +518,7 @@ int main(int argc, char *argv[]) {
                            switch (Print_log(logName, ip, code, ttl)){
                                case 1:
                                    finish(logName);
-				done = 1;
+                                done = 1;
                                    break;
 
                                case 0:
