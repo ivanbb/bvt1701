@@ -4,7 +4,8 @@
 // Description:
 //    Print usage information
 //
-void usage(char *progname) {
+void usage(char *progname) 
+{
 	printf("usage: %s host-name [max-hops]\n", progname);
 	ExitProcess(-1);
 }
@@ -18,7 +19,8 @@ void usage(char *progname) {
 //    response will be sent back to us. This way we can see all
 //    the hops along the way to the destination.
 //
-int set_ttl(SOCKET s, int nTimeToLive) {
+int set_ttl(SOCKET s, int nTimeToLive) 
+{
 	int nRet;
 
 	nRet = setsockopt(s, IPPROTO_IP, IP_TTL, (LPSTR) &nTimeToLive, sizeof(int));
@@ -38,7 +40,8 @@ int set_ttl(SOCKET s, int nTimeToLive) {
 //    The response is an IP packet. We must decode the IP header
 //    to locate the ICMP data.
 //
-int decode_resp(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
+int decode_resp(char *buf, int bytes, SOCKADDR_IN *from, int ttl) 
+{
 	return 0;
 }
 
@@ -51,7 +54,8 @@ int decode_resp(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
 //    hand. Normally, the TCP layer handles all this when you do
 //    sockets, but ICMP is at a somewhat lower level.
 //
-USHORT checksum(USHORT *buffer, int size) {
+USHORT checksum(USHORT *buffer, int size) 
+{
 	unsigned long cksum = 0;
 
 	while (size > 1) {
@@ -66,7 +70,8 @@ USHORT checksum(USHORT *buffer, int size) {
 	return (USHORT) (~cksum);
 }
 
-void fill_icmp_data(char *icmp_data, int datasize) {
+void fill_icmp_data(char *icmp_data, int datasize) 
+{
 	IcmpHeader *icmp_hdr;
 	char *datapart;
 
@@ -129,7 +134,8 @@ int createSocket(char * ip)
 		hp = gethostbyname(ip);
 		if (hp)
 			memcpy(&(dest.sin_addr), hp->h_addr, hp->h_length);
-		else {
+		else 
+		{
 			printf("Unable to resolve %s\n", ip);
 			ExitProcess(-1);
 		}
