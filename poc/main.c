@@ -116,7 +116,7 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
     struct in_addr inaddr = from->sin_addr;
     //char message[100] = "     Status: Status: Acknowledgment IP address "; //запись о состоянии
     char buff[100];
-    char *message = "";
+    char message[255];
     char *ip;
 
     iphdr = (IpHeader *) buf;
@@ -211,7 +211,6 @@ int receiveICMP(int ttl) {
     //
     //  done = decode_resp(recvbuf, ret, &from, ttl);
     reply = getReply(recvbuf, ret, &from, ttl);
-    Sleep(100);
     return reply;
 }
 
@@ -344,7 +343,7 @@ void diagnosticError(int code) {
 }
 
 int main(int argc, char *argv[]) {
-    char ip[15] = ""; // TODO: сделать проверку на наличие аргументов…
+    char ip[15] = "";
     char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
     int ttl = 1;
     int code = 0;

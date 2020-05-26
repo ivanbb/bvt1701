@@ -62,7 +62,7 @@ int ret,
        fromlen = sizeof(from),
        done = 0,
        maxhops,
-       timeout = 100;
+       timeout = 1000;
 
 char *icmp_data,
        *recvbuf;
