@@ -16,7 +16,6 @@
 #include "network.h"
 #pragma comment(lib, "ws2_32.lib")
 
-
 /**
 	Open or Make LOG File
 	@param *log - Name of the LOG File
@@ -36,6 +35,7 @@ int start(char *log)
 		time_t time_now = time(NULL);
 		struct tm *newtime; // Local time
 		newtime = localtime(&time_now); // Converting system time to local time 
+		strftime(time_str, 128, "Date:  %x %A %X", newtime); //Преобразуем локальное время в текстовую строку
 		for (i; i < strlen(time_str); i++) 
 		{ 
 			/* writing the time to the log */
@@ -61,48 +61,50 @@ int start(char *log)
 void analyze(char *ipAddress) 
 {
 	int i = 0;
-	int count_point = 0;
-
-	for (i = 0; i < strlen(ipAddress); i++) // Сheck whether there are characters that are not numbers or dots
-	{
-		if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.'))
-			printLog("Invalid adress error");
-			printf("Invalid adress error\n");
-			finish();
-	}
-	for (i = 0; i < strlen(ipAddress); i++) // Checking the number of points (Must be less than 3)
-	{
-	if (ipAddress[i] == '.')
-		count_point++;
-	}
-	if (count_point != 3)
-		printLog("Invalid adress error");
-		printf("Invalid adress error\n");
-		finish();
-	for (i = 0; i < strlen(ipAddress); i++)// Сhecking the IP numbers
-	{
-		//string str = "";
-		char str[10] = "";
-		int p = 0;
-		for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) // Reading the IP octet
-		{
-			str[p] = ipAddress[i];
-		}
-		str[p] = '\0';
-		if (str[0] != '0') // Checking whether the octet is correct
-		{
-			int a = atoi(str);
-			if (a > 255)
-				printLog("Invalid adress error");
-				printf("Invalid adress error\n");
-				finish();
-		} else
-		{
-			printLog("Invalid adress error");
-			printf("Invalid adress error\n");
-			finish();
-		}
-	}
+   int count_point = 0;
+   int hasError = 0;
+   
+   for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
+   {
+       if (ipAddress[i] == '.')
+           count_point++;
+   }
+   if (count_point == 1)// ���� ������ 3 �� ���������� 0
+           return ;
+   
+   for (i = 0; i < strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
+   {
+       if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.')) {
+            hasError = 1;
+       }
+   }
+   
+   if (count_point != 3)// ���� ������ 3 �� ���������� 0
+           hasError = 1;
+   for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
+   {
+       //string str = "";
+       char str[10] = "";
+       int p = 0;
+       for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// ��������� ����� IP
+           str[p] = ipAddress[i];
+       }
+       str[p] = '\0';
+       if (str[0] != '0') // ��������� �������� �� ������(�� �������� �� ����� � �0�)
+       {
+           int a = atoi(str);
+           if (a > 255){// ���� ����� IP ������ 255, �� ���������� 0
+                hasError = 1;
+           }
+       } else {
+           hasError = 1;
+       }
+   }
+   if (hasError == 1) {
+    printLog("     Invalid adress error\r");
+    printf("Invalid adress error\n");
+    finish();
+   }
 }
 
 /**
@@ -122,36 +124,66 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl)
 	unsigned short iphdrlen;
 	struct hostent *lpHostent = NULL;
 	struct in_addr inaddr = from->sin_addr;
+	//char message[100] = "     Status: Status: Acknowledgment IP address "; //запись о состоянии 
+	char buff[100];
+	char* message = "";
+	char* ip;
 
 	iphdr = (IpHeader *) buf;
 	// Number of 32-bit words * 4 = bytes
 	iphdrlen = iphdr->h_len * 4;
 
-	if (bytes < iphdrlen + ICMP_MIN)
-		printf("Too few bytes from% s\n", inet_ntoa(from->sin_addr));
+	if (bytes < iphdrlen + ICMP_MIN){
+		char* few = inet_ntoa(from->sin_addr);
+		strcat(few, " get few bytes.");
+
+		printf("%s get few bytes.\n", few);
+		printLog(few);
+	}
 
 	icmphdr = (IcmpHeader *) (buf + iphdrlen);
 
 	switch (icmphdr->i_type) 
 	{
 		case ICMP_ECHOREPLY:     // Response from destination
-			lpHostent = gethostbyaddr((const char *) &from->sin_addr, AF_INET, sizeof(struct in_addr));
-			if (lpHostent != NULL)
-				printf("%2d  %s (%s)\n", ttl, lpHostent->h_name,
-							inet_ntoa(inaddr));
+			lpHostent = gethostbyaddr((const char*)&from->sin_addr, AF_INET, sizeof(struct in_addr));
+			if (lpHostent != NULL) {
+				char* hname = lpHostent->h_name;
+				ip = inet_ntoa(inaddr);
+				strcat(message, "    Status: Recive from IP address ");
+				strcat(message, hname);
+				strcat(message, " (");
+				strcat(message, ip);
+				strcat(message, ").");
+				printf("%2d  %s (%s)\n", ttl, hname, ip);
+				printLog(message);
+			}
 			return 1;
 			break;
-		case ICMP_TIMEOUT:      // Response from router along the way		
-			printf("%2d  %s\n", ttl, inet_ntoa(inaddr));
+		case ICMP_TIMEOUT:      // Response from router along the way	
+			ip = inet_ntoa(inaddr);
+			message = itoa(ttl, buff, 10);
+			strcpy(message, "    Status: Recive from IP address ");
+			strcat(message, ip);
+			printf("%2d  %s\n", ttl, ip);
+			printLog(message);
 			return 0;
 			break;
 		case ICMP_DESTUNREACH:  // Can't reach the destination at all
-			printf("%2d  %s  reports: Host is unreachable\n", ttl,
-						inet_ntoa(inaddr));
+			ip = inet_ntoa(inaddr);
+			itoa(ttl, message, 10);
+			strcat(message, " ");
+			strcat(message, ip);
+			strcat(message, " reports: Host is unreachable.");
+			printf("%2d  %s  reports: Host is unreachable\n", ttl, ip);
+			printLog(message);
 			return 0;
 			break;
 		default:
+			itoa(ttl, message, 10);
+			strcat(message, " non-echo type recvd.");
 			printf("non-echo type %d recvd\n", icmphdr->i_type);
+			printLog(message);
 			return 0;
 			break;
 	}
@@ -172,12 +204,17 @@ int receiveICMP(int ttl)
 	// the way.
 	//
 	int reply = 0;
+	char* message;
 	ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen);
 	if (ret == SOCKET_ERROR) 
 	{
 		if (WSAGetLastError() == WSAETIMEDOUT) 
 		{
+			itoa(ttl, message, 10);
+			strcat(message, " Receive Request timed out.");
+
 			printf("%2d  Receive Request timed out.\n", ttl);
+			printLog(message);
 			return 0;
 		}
 		return 2;
@@ -202,14 +239,26 @@ int sendRequest(char *ip, int ttl)
 {
 	int bwrote;
 	int reciveResult = 0;
+	char* errorCode;
+	char* message;
+
 	bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR *) &dest, sizeof(dest));
 	if (bwrote == SOCKET_ERROR)
 	{
 		if (WSAGetLastError() == WSAETIMEDOUT) {
+			itoa(ttl, message, 10);
+			strcat(message, " Send request timed out.");
+
 			printf("%2d  Send request timed out.\n", ttl);
+			printLog(message);
 		}
-		printf("sendto() failed: %d\n", WSAGetLastError());	
-		return 2;
+		message = "sendto() failed: ";
+		itoa(WSAGetLastError(), errorCode, 10);
+		strcat(message, errorCode);
+
+		printf("sendto() failed: %d\n", WSAGetLastError());
+		printLog(message);
+		return 2;;
 	}
 	reciveResult = receiveICMP(ttl);
 	return reciveResult;    
@@ -223,7 +272,7 @@ void finish()
 {
 	char time_str[128] = "";
 	int i = 0;
-	char info[100] = "     Status: Close log ... \r";
+	char info[100] = "     Status: stop log ... \r";
 	if (fp != NULL)
 	{
 			time_t time_now = time(NULL); 
@@ -245,7 +294,7 @@ void finish()
 }
 
 /**
-	No description TODO: codeOS, Motherfuckers
+	No description TODO: codeOS
 **/
 int codeOS(FILE *log, int code) {  
 	char errStr1[] = "�������� ����� �����, ��� ������ - 1";
@@ -283,11 +332,13 @@ int printLog(char* text_prihodit)
 	struct tm* newtime;
 	time_t time_now = time(NULL);
 	char time_str[128];
+	char end_r[] = "\r";
 
 	newtime = localtime(&time_now);
 	strftime(time_str, 128, "Date:  %x %A %X\t", newtime);
 	strcat(time_str, text_prihodit);
 
+	strcat(time_str, end_r);
 	if (fp != NULL) {
 		fprintf(fp, time_str);
 		return 1;
@@ -330,6 +381,7 @@ int main(int argc, char *argv[])
 	// Initialize the Winsock2 DLL
 	if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
 		printf("WSAStartup() failed: %d\n", GetLastError());
+		printLog("WSAStartup() failed");
 		return -1;
 	}
 	
@@ -344,6 +396,8 @@ int main(int argc, char *argv[])
 		//
 		// Set the time to live option on the socket
 		//
+		char info_TTL[100] = "    Status: TTL set value "; //запись TTL
+		char str_TTL[10]="";
 		set_ttl(sockRaw, ttl);
 
 		//
@@ -360,10 +414,14 @@ int main(int argc, char *argv[])
 
 		switch(code){
 			case 0: // go to the next IP address
+				itoa(ttl, str_TTL, 10); //TTL преобразуем в char
+				strcat(info_TTL, str_TTL); // добавили TTL в info
+				printLog(info_TTL);	
 				ttl++;
 				break;
 			case 1: // Reached their destination
-				printLog("Traceroute complete succesfully");
+				printLog("    Traceroute complete succesfully");
+				finish();
 				done = 1;
 				break;
 			case 2: // Errors
