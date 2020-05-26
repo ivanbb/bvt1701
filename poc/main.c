@@ -23,19 +23,17 @@
 int start(char *log) {
     char time_str[128] = ""; // Переменная под время
     int i = 0;
-    int j = 0;
     char info[100] = "     Status: start log ... \r"; // Переменная со статусом запуска
     fp = fopen(log, "a+");
     if (fp != NULL) {
-        time_t time_now = time(NULL);
-        struct tm *newtime; // Локальное время
-        newtime = localtime(&time_now); // Преобразование системного времени в локальное
+        time_t time_now = time(NULL);// Системное время
+        struct tm *newtime = localtime(&time_now); // Преобразование системного времени в локальное
         strftime(time_str, 128, "Date:  %x %A %X", newtime); //Преобразуем локальное время в текстовую строку
-        for (i; i < strlen(time_str); i++) {
+        for (i=0; i < strlen(time_str); i++) {
             fputc(time_str[i], fp); // Пишется время в лог
         }
-        for (j; j < strlen(info); j++) {
-            fputc(info[j], fp); // Пишется состояние в лог
+        for (i=0; i < strlen(info); i++) {
+            fputc(info[i], fp); // Пишется состояние в лог
         }
         return 1;
     }
@@ -74,7 +72,6 @@ void analyze(char *ipAddress) {
         hasError = 1;
     for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
     {
-        //string str = "";
         char str[10] = "";
         int p = 0;
         for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// ��������� ����� IP
@@ -111,13 +108,12 @@ void analyze(char *ipAddress) {
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
     IpHeader *iphdr = NULL;
     IcmpHeader *icmphdr = NULL;
-    unsigned short iphdrlen;
+    unsigned short iphdrlen = 0;
     struct hostent *lpHostent = NULL;
     struct in_addr inaddr = from->sin_addr;
-    //char message[100] = "     Status: Status: Acknowledgment IP address "; //запись о состоянии
-    char buff[100];
-    char message[255];
-    char *ip;
+    char *buff = "";
+    char *message = "";
+    char *ip = "";
 
     iphdr = (IpHeader *) buf;
     // Number of 32-bit words * 4 = bytes
@@ -192,7 +188,7 @@ int receiveICMP(int ttl) {
     // the way.
     //
     int reply = 0;
-    char *message;
+    char *message = "";
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen);
     if (ret == SOCKET_ERROR) {
         if (WSAGetLastError() == WSAETIMEDOUT) {
@@ -221,10 +217,10 @@ int receiveICMP(int ttl) {
 	@return none
 **/
 int sendRequest(char *ip, int ttl) {
-    int bwrote;
+    int bwrote = 0;
     int reciveResult = 0;
-    char *errorCode;
-    char *message;
+    char *errorCode = "";
+    char *message = "";
 
     bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest));
     if (bwrote == SOCKET_ERROR) {
@@ -256,9 +252,8 @@ void finish() {
     int i = 0;
     char info[100] = "     Status: stop log ... \r";
     if (fp != NULL) {
-        time_t time_now = time(NULL);
-        struct tm *newtime; // Local time
-        newtime = localtime(&time_now); // Converting system time to local time
+        time_t time_now = time(NULL); // system time
+        struct tm *newtime = localtime(&time_now);// Converting system time to local time
         strftime(time_str, 128, "Date:  %x %A %X", newtime); //Converting local time to a text string
         for (i = 0; i < strlen(time_str); i++) {
             /* writing the time to the log */
@@ -308,12 +303,10 @@ int codeOS(FILE *log, int code) {
 					0 - record error
 **/
 int printLog(char *text_prihodit) {
-    struct tm *newtime;
     time_t time_now = time(NULL);
-    char time_str[128];
+    struct tm *newtime = localtime(&time_now);
+    char time_str[128] = "";
     char end_r[] = "\r";
-
-    newtime = localtime(&time_now);
     strftime(time_str, 128, "Date:  %x %A %X\t", newtime);
     strcat(time_str, text_prihodit);
 
@@ -333,7 +326,7 @@ Displays an error in the log
 @param code - network error code
 **/
 void diagnosticError(int code) {
-    char codeStr[50];
+    char codeStr[50] = "";
     char finStr[50] = "\nNetwork  error: ";
 
     itoa(code, codeStr, 10);
@@ -346,7 +339,7 @@ int main(int argc, char *argv[]) {
     char ip[15] = "";
     char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
     int ttl = 1;
-    int code = 0;
+    int code = 1;
 
     if (argc < 2) {
         usage(argv[0]);

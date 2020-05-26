@@ -57,17 +57,17 @@ SOCKET sockRaw;
 HOSTENT *hp = NULL;
 SOCKADDR_IN dest,
                 from;
-int ret,
-       datasize,
+int ret = 0,
+       datasize = 0,
        fromlen = sizeof(from),
        done = 0,
-       maxhops,
+       maxhops = 0,
        timeout = 1000;
 
-char *icmp_data,
-       *recvbuf;
+char *icmp_data = "",
+       *recvbuf = "";
        
-BOOL bOpt;
+BOOL bOpt = FALSE;
 USHORT seq_no = 0;
 
 FILE * fp; // Pointer to the log file

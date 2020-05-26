@@ -21,7 +21,7 @@ void usage(char *progname)
 //
 int set_ttl(SOCKET s, int nTimeToLive) 
 {
-	int nRet;
+	int nRet = 0;
 
 	nRet = setsockopt(s, IPPROTO_IP, IP_TTL, (LPSTR) &nTimeToLive, sizeof(int));
 
@@ -31,18 +31,6 @@ int set_ttl(SOCKET s, int nTimeToLive)
 		return 0;
 	}
 	return 1;
-}
-
-//
-// Function: decode_resp
-//
-// Description:
-//    The response is an IP packet. We must decode the IP header
-//    to locate the ICMP data.
-//
-int decode_resp(char *buf, int bytes, SOCKADDR_IN *from, int ttl) 
-{
-	return 0;
 }
 
 //
@@ -73,7 +61,7 @@ USHORT checksum(USHORT *buffer, int size)
 void fill_icmp_data(char *icmp_data, int datasize) 
 {
 	IcmpHeader *icmp_hdr;
-	char *datapart;
+	char *datapart = "";
 
 	icmp_hdr = (IcmpHeader *) icmp_data;
 

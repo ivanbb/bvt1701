@@ -8,3 +8,5 @@
 *.mk1
 *.mk
 *.sym
+poc/noname.tgt
+poc/noname.wpj
