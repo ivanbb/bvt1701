@@ -6,7 +6,7 @@
 //
 void usage(char *progname) 
 {
-	printf("usage: %s host-name [max-hops]\n", progname);
+	printf("usage: %s host-name \n", progname);
 	ExitProcess(-1);
 }
 
@@ -80,6 +80,13 @@ void fill_icmp_data(char *icmp_data, int datasize)
 
 int createSocket(char * ip)
 {
+
+    // Initialize the Winsock2 DLL
+    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
+        printf("WSAStartup() failed: %d\n", GetLastError());
+        printLog("WSAStartup() failed");
+        return -1;
+    }
 	//
 	// Create a raw socket that will be used to send the ICMP
 	// packets to the remote host you want to ping

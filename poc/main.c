@@ -18,6 +18,8 @@ char ip[15] = "";
 char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
 int ttl = 1;
 int code = 0;
+char info_TTL[100] = "    Status: TTL set value "; //запись TTL
+char str_TTL[10] = "";
 
 
 /**
@@ -26,11 +28,18 @@ int code = 0;
   @return int 1 - Файл открыт и записан file is opened and updated
         int    0 - other cases
 **/
-int start(char *log) {
+int start(int argc, char *argv[]) {
+
     char time_str[128] = ""; //variable for time
     int i = 0;
     char info[100] = "     Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
-    fp = fopen(log, "a+");
+
+    if (argc < 2) {
+        usage(argv[0]);
+    }
+
+    strcat(ip, argv[1]);
+    fp = fopen(logName, "a+");
     if (fp != NULL) {
         time_t time_now = time(NULL);// system time 
         struct tm *newtime = localtime(&time_now); // system time conversion to local time   
@@ -41,10 +50,10 @@ int start(char *log) {
         for (i=0; i < strlen(info); i++) {
             fputc(info[i], fp); // state into lof fileПишется состояние в лог
         }
-        return 1;
+        return TRUE;
     }
     //codeOS(FILE *log, int code); TODO
-    return 0;
+    return FALSE;
 }
 
 
@@ -54,7 +63,7 @@ int start(char *log) {
   @return found mistake - switch to finish
 **/
 
-void analyze(char *ipAddress) {
+int analyze(char *ipAddress) {
     int i = 0;
     int count_point = 0;
     int hasError = 0;
@@ -65,7 +74,7 @@ void analyze(char *ipAddress) {
             count_point++;
     }
     if (count_point == 1)// if there is number return 1
-        return;
+        hasError = 1;
 
     for (i = 0; i <strlen(ipAddress); i++) //loop if number between 0 and 9 or point
     {
@@ -93,9 +102,13 @@ void analyze(char *ipAddress) {
         }
     }
 if (hasError == 1) {
-printLog("     Invalid adress error\r");
-printf("Invalid adress error\n");
-finish();
+    printLog("     Invalid adress error\r");
+    printf("Invalid adress error\n");
+    //finish();
+    return FALSE;
+} else {
+    createSocket(ip);
+    return TRUE;
 }
 }
 
@@ -194,6 +207,9 @@ int receiveICMP(int ttl) {
     int reply = 0; // variable for reply code
     char *message = ""; // variable for message text
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
+    if (ttl > maxhops){
+        return 2;
+    }
     if (ret == SOCKET_ERROR) {
         if (WSAGetLastError() == WSAETIMEDOUT) {
             itoa(ttl, message, 10);
@@ -221,11 +237,22 @@ int receiveICMP(int ttl) {
               int ttl The life time of the packet at the current hop
   @return none
 **/
-int sendRequest(char *ip, int ttl) {
+void sendRequest(char *ip, int ttl) {
     int bwrote = 0; // Request string variable
     int reciveResult = 0; // Variable for result of receiving ICMP
     char *errorCode = ""; // Variable for error code
     char *message = ""; // Variable for print message
+
+    set_ttl(sockRaw, ttl);
+
+    //
+    // Fill in some more data in the ICMP header
+    //
+    ((IcmpHeader *) icmp_data)->i_cksum = 0;
+    ((IcmpHeader *) icmp_data)->timestamp = GetTickCount();
+
+    ((IcmpHeader *) icmp_data)->i_seq = seq_no++;
+    ((IcmpHeader *) icmp_data)->i_cksum = checksum((USHORT *) icmp_data, datasize);
 
     bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest)); // Send packet with socket
     if (bwrote == SOCKET_ERROR) { // Check for socket error
@@ -242,10 +269,8 @@ int sendRequest(char *ip, int ttl) {
 
         printf("sendto() failed: %d\n", WSAGetLastError()); // Print error
         printLog(message); // Print error to log
-        return 2;;
+        finish();
     }
-    reciveResult = receiveICMP(ttl); // Get ICMP result
-    return reciveResult; // return result
 }
 
 /**
@@ -345,66 +370,41 @@ void diagnosticError(int code) {
 
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        usage(argv[0]);
-    }
-
-    strcat(ip, argv[1]);
-    start(logName);
-    analyze(ip);
-
-    // Initialize the Winsock2 DLL
-    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
-        printf("WSAStartup() failed: %d\n", GetLastError());
-        printLog("WSAStartup() failed");
-        return -1;
-    }
-
-    if (argc == 3)
-        maxhops = atoi(argv[2]);
-    else
-        maxhops = MAX_HOPS;
-
-    createSocket(ip);
-
-    while ((ttl < maxhops) && (!done)) {
-        //
-        // Set the time to live option on the socket
-        //
-        char info_TTL[100] = "    Status: TTL set value "; //запись TTL
-        char str_TTL[10] = "";
-        set_ttl(sockRaw, ttl);
-
-        //
-        // Fill in some more data in the ICMP header
-        //
-        ((IcmpHeader *) icmp_data)->i_cksum = 0;
-        ((IcmpHeader *) icmp_data)->timestamp = GetTickCount();
-
-        ((IcmpHeader *) icmp_data)->i_seq = seq_no++;
-        ((IcmpHeader *) icmp_data)->i_cksum = checksum((USHORT *) icmp_data, datasize);
-
-
-        code = sendRequest(ip, ttl); //
-
-        switch (code) {
-            case 0: // go to the next IP address
-                itoa(ttl, str_TTL, 10); //TTL преобразуем в char
-                strcat(info_TTL, str_TTL); // добавили TTL в info
-                printLog(info_TTL);
-                ttl++;
-                break;
-            case 1: // Reached their destination
-                printLog("    Traceroute complete succesfully");
-                finish();
-                done = 1;
-                break;
-            case 2: // Errors
-                diagnosticError(WSAGetLastError());
-                finish();
-                break;
-        }
-    }
+    switch (start(argc, argv)) {
+        case TRUE:
+            switch (analyze(ip)) {
+                case TRUE:         
+                   // while ((ttl < maxhops) && (!done)) {  
+                    while (TRUE) {
+                        sendRequest(ip, ttl);
+                        switch (receiveICMP(ttl)) {
+                            case 0: // go to the next IP address
+                                itoa(ttl, str_TTL, 10); //TTL преобразуем в char
+                                strcat(info_TTL, str_TTL); // добавили TTL в info
+                                printLog(info_TTL);
+                                ttl++;
+                                break;
+                            case 1: // Reached their destination
+                                printLog("    Traceroute complete succesfully");
+                                finish();
+                                done = 1;
+                                break;
+                            case 2: // Errors
+                                diagnosticError(WSAGetLastError());
+                                finish();
+                                break;
+                        }
+                    }
+                    break;
+                case FALSE:
+                    finish();
+                    break;
+            }
+            break;
+        case FALSE:
+            finish();
+            break;
+    }   
     return 0;
 }
 

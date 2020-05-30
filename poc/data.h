@@ -61,7 +61,7 @@ int ret = 0,
        datasize = 0,
        fromlen = sizeof(from),
        done = 0,
-       maxhops = 0,
+       maxhops = 30,
        timeout = 1000;
 
 char *icmp_data = "",
