@@ -29,17 +29,16 @@ int code = 0;
 int start(char *log) {
     char time_str[128] = ""; //variable for time
     int i = 0;
-    int j = 0;
     char info[100] = "     Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
     fp = fopen(log, "a+");
     if (fp != NULL) {
-        time_t time_now = time(NULL);
-        struct tm *newtime; // local time
-        newtime = localtime(&time_now); // system time conversion to local time       strftime(time_str, 128, "Date:  %x %A %X", newtime); //converts local time into str
-        for (i; i < strlen(time_str); i++) {
+        time_t time_now = time(NULL);// system time 
+        struct tm *newtime = localtime(&time_now); // system time conversion to local time   
+        strftime(time_str, 128, "Date:  %x %A %X", newtime); //converts local time into str
+        for (i=0; i < strlen(time_str); i++) {
             fputc(time_str[i], fp); // time into log file Пишется время в лог
         }
-        for (j; j < strlen(info); j++) {
+        for (i=0; i < strlen(info); i++) {
             fputc(info[j], fp); // state into lof fileПишется состояние в лог
         }
         return 1;
@@ -80,7 +79,6 @@ void analyze(char *ipAddress) {
         hasError = 1;
     for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
     {
-        //string str = "";
         char str[10] = "";
         int p = 0;
         for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// read IP octet
@@ -116,13 +114,12 @@ finish();
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
     IpHeader *iphdr = NULL;
     IcmpHeader *icmphdr = NULL;
-    unsigned short iphdrlen;
+    unsigned short iphdrlen = 0;
     struct hostent *lpHostent = NULL;
     struct in_addr inaddr = from->sin_addr;
-    //char message[100] = "     Status: Status: Acknowledgment IP address "; //запись о состоянии
-    char buff[100];
-    char message[255];
-    char *ip;
+    char *buff = "";
+    char *message = "";
+    char *ip = "";
 
     iphdr = (IpHeader *) buf;
     // Number of 32-bit words * 4 = bytes
@@ -197,7 +194,7 @@ int receiveICMP(int ttl) {
     // the way.
     //
     int reply = 0; // variable for reply code
-    char *message; // variable for message text
+    char *message = ""; // variable for message text
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
     if (ret == SOCKET_ERROR) {
         if (WSAGetLastError() == WSAETIMEDOUT) {
@@ -227,10 +224,10 @@ int receiveICMP(int ttl) {
   @return none
 **/
 int sendRequest(char *ip, int ttl) {
-    int bwrote; // Request string variable
+    int bwrote = 0; // Request string variable
     int reciveResult = 0; // Variable for result of receiving ICMP
-    char *errorCode; // Variable for error code
-    char *message; // Variable for print message
+    char *errorCode = ""; // Variable for error code
+    char *message = ""; // Variable for print message
 
     bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest)); // Send packet with socket
     if (bwrote == SOCKET_ERROR) { // Check for socket error
@@ -263,8 +260,7 @@ void finish() {
     char info[100] = "     Status: stop log ... \r"; // Variable for status
     if (fp != NULL) {
         time_t time_now = time(NULL); // Structure for time variable
-        struct tm *newtime; // Local time
-        newtime = localtime(&time_now); // Converting system time to local time
+        struct tm *newtime = localtime(&time_now); // Converting system time to local time
         strftime(time_str, 128, "Date:  %x %A %X", newtime); //Converting local time to a text string
         for (i = 0; i < strlen(time_str); i++) {
             /* writing the time to the log */
@@ -314,12 +310,10 @@ int codeOS(FILE *log, int code) {
               0 - record error
 **/
 int printLog(char *text_prihodit) {
-    struct tm *newtime; // Structure for local time
     time_t time_now = time(NULL); // Structure for time
-    char time_str[128]; // String for time
+    struct tm *newtime = localtime(&time_now); // Structure for local time
+    char time_str[128] = ""; // String for time
     char end_r[] = "\r"; // End of string
-
-    newtime = localtime(&time_now); // Get local time
     strftime(time_str, 128, "Date:  %x %A %X\t", newtime); // Format time string
     strcat(time_str, text_prihodit); // Concat time with  income text
 
@@ -339,7 +333,7 @@ Displays an error in the log
 @param code - network error code
 **/
 void diagnosticError(int code) {
-    char codeStr[50]; // Variable for error code
+    char codeStr[50] = ""; // Variable for error code
     char finStr[50] = "\nNetwork  error: "; // Variable for error text
 
     itoa(code, codeStr, 10); // Convert to string
