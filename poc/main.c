@@ -39,7 +39,7 @@ int start(char *log) {
             fputc(time_str[i], fp); // time into log file Пишется время в лог
         }
         for (i=0; i < strlen(info); i++) {
-            fputc(info[j], fp); // state into lof fileПишется состояние в лог
+            fputc(info[i], fp); // state into lof fileПишется состояние в лог
         }
         return 1;
     }
@@ -81,19 +81,17 @@ void analyze(char *ipAddress) {
     {
         char str[10] = "";
         int p = 0;
+        int a = 0;
         for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// read IP octet
             str[p] = ipAddress[i];
         }
         str[p] = '\0';
         if (str[0] != '0') // check if is a number(does not begin with zero)
-            int a = atoi(str);
+            a = atoi(str);
         if (a > 255) {// if ip’s octet is higher than 255 return 0
             hasError = 1;
         }
-    } else {
-        hasError = 1;
     }
-}
 if (hasError == 1) {
 printLog("     Invalid adress error\r");
 printf("Invalid adress error\n");
