@@ -1,41 +1,46 @@
-#include <stdio.h> // стандартный заголовочный файл ввода-вывода
-#include <stdlib.h> // заголовочный файл стандартной библиотеки языка Си, который содержит в себе функции, занимающиеся выделением памяти, контролем процесса выполнения программы, преобразованием типов и другие.
+#include <stdio.h> // standard input / output header file
+#include <stdlib.h> // header file of the standard C library, which contains functions that allocate memory, control the process of program execution, type conversion, and other.
 
-#pragma pack(4) // задает выравнивание упаковки для членов структуры, объединения и класса.
+#pragma pack(4) // sets packing alignment for members of the structure, union, and class.
 
-#define WIN32_LEAN_AND_MEAN // предоставляет API сокетам
+#define WIN32_LEAN_AND_MEAN // provides API to socket
 
-#include <winsock2.h> // библиотека для использования сокетов Winsock2
-#include <ws2tcpip.h> // библиотека для использования соединеия TCP/IP
-#include <time.h> // заголовочный файл стандартной библиотеки языка программирования C, содержащий типы и функции для работы с датой и временем
+#include <winsock2.h> // library for using Winsock2 sockets
+#include <ws2tcpip.h> // library for using TCP / IP connection
+#include <time.h>		// header file of the standard library of the programming language C, containing types and functions for working with date and time
 
-#include "data.h" // файл со структурами и переменными
-#include "network.h" // файл со вспомогательными функциями
+#include "data.h" // file with structures and variables
+#include "network.h" // file with auxiliary functions
 
-#pragma comment(lib, "ws2_32.lib") // библиотека для использования сокетов Winsock2
+#pragma comment(lib, "ws2_32.lib") // library for using Winsock2 sockets
+
+char ip[15] = "";
+char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
+int ttl = 1;
+int code = 0;
+
 
 /**
-	Функция start - создаёт или открывает
-	@param *log - Имя лог файла
-	@return int 1 - Файл открыт и записан
-			int	0 - Остальные случаи
+  Function start - creates or opens
+  @param *log - log file name
+  @return int 1 - Файл открыт и записан file is opened and updated
+        int    0 - other cases
 **/
 int start(char *log) {
-    char time_str[128] = ""; // Переменная под время
+    char time_str[128] = ""; //variable for time
     int i = 0;
     int j = 0;
-    char info[100] = "     Status: start log ... \r"; // Переменная со статусом запуска
+    char info[100] = "     Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
     fp = fopen(log, "a+");
     if (fp != NULL) {
         time_t time_now = time(NULL);
-        struct tm *newtime; // Локальное время
-        newtime = localtime(&time_now); // Преобразование системного времени в локальное
-        strftime(time_str, 128, "Date:  %x %A %X", newtime); //Преобразуем локальное время в текстовую строку
+        struct tm *newtime; // local time
+        newtime = localtime(&time_now); // system time conversion to local time       strftime(time_str, 128, "Date:  %x %A %X", newtime); //converts local time into str
         for (i; i < strlen(time_str); i++) {
-            fputc(time_str[i], fp); // Пишется время в лог
+            fputc(time_str[i], fp); // time into log file Пишется время в лог
         }
         for (j; j < strlen(info); j++) {
-            fputc(info[j], fp); // Пишется состояние в лог
+            fputc(info[j], fp); // state into lof fileПишется состояние в лог
         }
         return 1;
     }
@@ -45,67 +50,67 @@ int start(char *log) {
 
 
 /**
-	Парсинг и проверка ip адреса
-	@param *ipAddress - Название ip адреса
-	@return Если найдена ошибка перейти в finish
+  Parsing and ip ip address check
+  @param *ipAddress - ip address name
+  @return found mistake - switch to finish
 **/
+
 void analyze(char *ipAddress) {
     int i = 0;
     int count_point = 0;
     int hasError = 0;
 
-    for (i = 0; i < strlen(ipAddress); i++) // ��������� ���-�� ����� � IP
+    for (i = 0; i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
     {
         if (ipAddress[i] == '.')
             count_point++;
     }
-    if (count_point == 1)// ���� ������ 3 �� ���������� 0
+    if (count_point == 1)// if there is number return 1
         return;
 
-    for (i = 0; i <
-                strlen(ipAddress); i++) //��������� ���� �� � ip ������� �� ���������� ������ ��� ������, ���� ���� �� ���������� 0
+    for (i = 0; i <strlen(ipAddress); i++) //loop if number between 0 and 9 or point
     {
-        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.')) {
+        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.')) //check value if number between 0 and 9 or point
+        {
             hasError = 1;
         }
     }
 
-    if (count_point != 3)// ���� ������ 3 �� ���������� 0
+    if (count_point != 3)// if more then 3 return 0
         hasError = 1;
-    for (i = 0; i < strlen(ipAddress); i++)//��������� ����� IP
+    for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
     {
         //string str = "";
         char str[10] = "";
         int p = 0;
-        for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// ��������� ����� IP
+        for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// read IP octet
             str[p] = ipAddress[i];
         }
         str[p] = '\0';
-        if (str[0] != '0') // ��������� �������� �� ������(�� �������� �� ����� � �0�)
-        {
+        if (str[0] != '0') // check if is a number(does not begin with zero)
             int a = atoi(str);
-            if (a > 255) {// ���� ����� IP ������ 255, �� ���������� 0
-                hasError = 1;
-            }
-        } else {
+        if (a > 255) {// if ip’s octet is higher than 255 return 0
             hasError = 1;
         }
+    } else {
+        hasError = 1;
     }
-    if (hasError == 1) {
-        printLog("     Invalid adress error\r");
-        printf("Invalid adress error\n");
-        finish();
-    }
+}
+if (hasError == 1) {
+printLog("     Invalid adress error\r");
+printf("Invalid adress error\n");
+finish();
+}
 }
 
 /**
-	Parsing the received package
-	@param *buf
-					bytes
-					*from
-					ttl - Life time package
-	@return int 1 - If final packege
-					int	0 - Otherwise
+  Parsing the received package
+  @param *buf
+              bytes
+              *from
+              ttl - Life time package
+  @return int 1 - If final packege
+              int    0 - Otherwise
 **/
 
 int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
@@ -180,20 +185,20 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
 }
 
 /**
-	Receives a response from the node
-	@param ttl - Life time package
-	@return int state (
-							0 - the response is received, 
-							1 - destination node reached, 
-							2 - receiving error)
+  Receives a response from the node
+  @param ttl - Life time package
+  @return int state (
+                    0 - the response is received,
+                    1 - destination node reached,
+                    2 - receiving error)
 **/
 int receiveICMP(int ttl) {
     // Read a packet back from the destination or a router along
     // the way.
     //
-    int reply = 0;
-    char *message;
-    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen);
+    int reply = 0; // variable for reply code
+    char *message; // variable for message text
+    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
     if (ret == SOCKET_ERROR) {
         if (WSAGetLastError() == WSAETIMEDOUT) {
             itoa(ttl, message, 10);
@@ -210,41 +215,42 @@ int receiveICMP(int ttl) {
     // router along the way or whether it has reached the destination.
     //
     //  done = decode_resp(recvbuf, ret, &from, ttl);
+
     reply = getReply(recvbuf, ret, &from, ttl);
     return reply;
 }
 
 /**
-	Send the ICMP packet to the destination
-	@param 	char* ip Address of the destination node
-					int ttl The life time of the packet at the current hop
-	@return none
+  Send the ICMP packet to the destination
+  @param     char* ip Address of the destination node
+              int ttl The life time of the packet at the current hop
+  @return none
 **/
 int sendRequest(char *ip, int ttl) {
-    int bwrote;
-    int reciveResult = 0;
-    char *errorCode;
-    char *message;
+    int bwrote; // Request string variable
+    int reciveResult = 0; // Variable for result of receiving ICMP
+    char *errorCode; // Variable for error code
+    char *message; // Variable for print message
 
-    bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest));
-    if (bwrote == SOCKET_ERROR) {
-        if (WSAGetLastError() == WSAETIMEDOUT) {
-            itoa(ttl, message, 10);
-            strcat(message, " Send request timed out.");
+    bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest)); // Send packet with socket
+    if (bwrote == SOCKET_ERROR) { // Check for socket error
+        if (WSAGetLastError() == WSAETIMEDOUT) {  // Time out error
+            itoa(ttl, message, 10); // Int TTL to string
+            strcat(message, " Send request timed out."); // Concat string
 
-            printf("%2d  Send request timed out.\n", ttl);
-            printLog(message);
+            printf("%2d  Send request timed out.\n", ttl); // Print timeout error
+            printLog(message); // Print timeout error to log
         }
-        message = "sendto() failed: ";
-        itoa(WSAGetLastError(), errorCode, 10);
-        strcat(message, errorCode);
+        message = "sendto() failed: "; // Error message
+        itoa(WSAGetLastError(), errorCode, 10); // Int code to string
+        strcat(message, errorCode); // Concat strings
 
-        printf("sendto() failed: %d\n", WSAGetLastError());
-        printLog(message);
+        printf("sendto() failed: %d\n", WSAGetLastError()); // Print error
+        printLog(message); // Print error to log
         return 2;;
     }
-    reciveResult = receiveICMP(ttl);
-    return reciveResult;
+    reciveResult = receiveICMP(ttl); // Get ICMP result
+    return reciveResult; // return result
 }
 
 /**
@@ -252,11 +258,11 @@ Conclusion the results of the work
 Closes the program and log file
 **/
 void finish() {
-    char time_str[128] = "";
-    int i = 0;
-    char info[100] = "     Status: stop log ... \r";
+    char time_str[128] = ""; // Variable for end time
+    int i = 0; // Counter for strings
+    char info[100] = "     Status: stop log ... \r"; // Variable for status
     if (fp != NULL) {
-        time_t time_now = time(NULL);
+        time_t time_now = time(NULL); // Structure for time variable
         struct tm *newtime; // Local time
         newtime = localtime(&time_now); // Converting system time to local time
         strftime(time_str, 128, "Date:  %x %A %X", newtime); //Converting local time to a text string
@@ -271,11 +277,11 @@ void finish() {
         }
         fclose(fp); // Close LOG File
     }
-    ExitProcess(-1);
+    ExitProcess(-1); // Stop program
 }
 
 /**
-	No description TODO: codeOS
+  No description TODO: codeOS
 **/
 int codeOS(FILE *log, int code) {
     char errStr1[] = "�������� ����� �����, ��� ������ - 1";
@@ -302,24 +308,24 @@ int codeOS(FILE *log, int code) {
 }
 
 /**
-	Writing to a log file
-	@param text_prihodit - Text to print
-	@return 1 - record success
-					0 - record error
+  Writing to a log file
+  @param text_prihodit - Text to print
+  @return 1 - record success
+              0 - record error
 **/
 int printLog(char *text_prihodit) {
-    struct tm *newtime;
-    time_t time_now = time(NULL);
-    char time_str[128];
-    char end_r[] = "\r";
+    struct tm *newtime; // Structure for local time
+    time_t time_now = time(NULL); // Structure for time
+    char time_str[128]; // String for time
+    char end_r[] = "\r"; // End of string
 
-    newtime = localtime(&time_now);
-    strftime(time_str, 128, "Date:  %x %A %X\t", newtime);
-    strcat(time_str, text_prihodit);
+    newtime = localtime(&time_now); // Get local time
+    strftime(time_str, 128, "Date:  %x %A %X\t", newtime); // Format time string
+    strcat(time_str, text_prihodit); // Concat time with  income text
 
-    strcat(time_str, end_r);
+    strcat(time_str, end_r); // Concat string with end of string
     if (fp != NULL) {
-        fprintf(fp, time_str);
+        fprintf(fp, time_str); // Check if file is open and print to it
         return 1;
     }
     return 0;
@@ -328,25 +334,24 @@ int printLog(char *text_prihodit) {
 
 /**
 Handling network errors
-Displays an error in cmd 
+Displays an error in cmd
 Displays an error in the log
 @param code - network error code
 **/
 void diagnosticError(int code) {
-    char codeStr[50];
-    char finStr[50] = "\nNetwork  error: ";
+    char codeStr[50]; // Variable for error code
+    char finStr[50] = "\nNetwork  error: "; // Variable for error text
 
-    itoa(code, codeStr, 10);
-    strcat(finStr, codeStr);
-    printf(finStr);
-    printLog(finStr);
+    itoa(code, codeStr, 10); // Convert to string
+    strcat(finStr, codeStr); // Concat strings
+    printf(finStr); // Print error
+    printLog(finStr); // Put error to log file
 }
 
+
+
+
 int main(int argc, char *argv[]) {
-    char ip[15] = "";
-    char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
-    int ttl = 1;
-    int code = 0;
 
     if (argc < 2) {
         usage(argv[0]);
@@ -354,7 +359,7 @@ int main(int argc, char *argv[]) {
 
     strcat(ip, argv[1]);
     start(logName);
-    //analyze(ip);
+    analyze(ip);
 
     // Initialize the Winsock2 DLL
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) {
@@ -388,7 +393,7 @@ int main(int argc, char *argv[]) {
         ((IcmpHeader *) icmp_data)->i_cksum = checksum((USHORT *) icmp_data, datasize);
 
 
-        code = sendRequest(ip, ttl); // TODO: по схеме sendRequest должен вызвать recieveICMP
+        code = sendRequest(ip, ttl); //
 
         switch (code) {
             case 0: // go to the next IP address
@@ -410,5 +415,8 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
+
+
+
 
 
