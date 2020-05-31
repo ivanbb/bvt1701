@@ -73,14 +73,15 @@ int analyze(char *ipAddress) {
     int count_point = 0;
     int hasError = 0;
 
-    for (i = 0;
-         i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
+    for (i = 0;i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
     {
         if (ipAddress[i] == '.')
             count_point++;
     }
-    if (count_point == 1)// if there is number return 1
-        hasError = 1;
+    if (count_point < 3)// if there is number return 1
+        hasError = 0;
+    else if (count_point ==3) 
+    {
 
     for (i = 0; i < strlen(ipAddress); i++) //loop if number between 0 and 9 or point
     {
@@ -90,9 +91,6 @@ int analyze(char *ipAddress) {
             hasError = 1;
         }
     }
-
-    if (count_point != 3)// if more then 3 return 0
-        hasError = 1;
     for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
     {
         char str[10] = "";
@@ -102,13 +100,15 @@ int analyze(char *ipAddress) {
             str[p] = ipAddress[i];
         }
         str[p] = '\0';
+        if (str != "")
+            hasError = 1;
         if (str[0] != '0') // check if is a number(does not begin with zero)
             a = atoi(str);
         if (a > 255) {// if ip’s octet is higher than 255 return 0
             hasError = 1;
         }
     }
-    hasError = 0;
+    }
     if (hasError == 1) {
         printf("Invalid adress error\n");
         return FALSE;
@@ -201,7 +201,6 @@ int receiveICMP() {
     // Read a packet back from the destination or a router along
     // the way.
     //
-    int reply = 0; // variable for reply code
     char *message = ""; // variable for message text
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
     if (ttl > maxhops) {
