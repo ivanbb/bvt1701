@@ -70,50 +70,48 @@ int start(int argc, char *argv[]) {
 **/
 int analyze(char *ipAddress) {
     int i = 0;
-    int count_point = 0;
-    int hasError = 0;
+    int count_point = 0; // Variable for count points in IP address
+    int hasError = 0; // Variable for check errors
 
-    for (i = 0;
-         i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
+    for (i = 0; i < strlen(ipAddress); i++) // Check ip for non-number or non dot symbols, if such symbols are there, return 0
     {
         if (ipAddress[i] == '.')
             count_point++;
     }
-    if (count_point == 1)// if there is number return 1
-        hasError = 1;
+    if (count_point == 1)// If there is number return 1
+        hasError = 1;// Set hasError 1
 
-    for (i = 0; i < strlen(ipAddress); i++) //loop if number between 0 and 9 or point
+    for (i = 0; i < strlen(ipAddress); i++) // Loop if number between 0 and 9 or point
     {
         if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') ||
-              ipAddress[i] == '.')) //check value if number between 0 and 9 or point
+              ipAddress[i] == '.')) // Check value if number between 0 and 9 or point
         {
-            hasError = 1;
+            hasError = 1;// Set hasError 1
         }
     }
 
-    if (count_point != 3)// if more then 3 return 0
-        hasError = 1;
-    for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
+    if (count_point != 3)// If more then 3 return 0
+        hasError = 1; // Set hasError 1
+    for (i = 0; i < strlen(ipAddress); i++) //Check IP numbers
     {
-        char str[10] = "";
+        char str[10] = ""; // Variable for IP address
         int p = 0;
         int a = 0;
-        for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) {// read IP octet
-            str[p] = ipAddress[i];
+        for (; ipAddress[i] != '.' && i < strlen(ipAddress); i++, p++) { // Read IP address octet
+            str[p] = ipAddress[i]; // Save IP address octet
         }
         str[p] = '\0';
-        if (str[0] != '0') // check if is a number(does not begin with zero)
+        if (str[0] != '0') // Check if is a number(does not begin with zero)
             a = atoi(str);
-        if (a > 255) {// if ip’s octet is higher than 255 return 0
+        if (a > 255) {  // If ip’s octet is higher than 255 return 0
             hasError = 1;
         }
     }
-
     if (hasError == 1) {
-        printf("Invalid adress error\n");
+        printf("Invalid adress error\n"); // Show error message in console
         return FALSE;
     } else {
-        createSocket(ip);
+        createSocket(ip); // Create soket with IP address
         return TRUE;
     }
 }
@@ -121,7 +119,6 @@ int analyze(char *ipAddress) {
 /**
   Parsing the received package
 **/
-
 void getReply() {
     IpHeader *iphdr = NULL;
     IcmpHeader *icmphdr = NULL;
