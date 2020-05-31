@@ -13,17 +13,17 @@
 #include "network.h" // file with auxiliary functions
 
 #pragma comment(lib, "ws2_32.lib") // library for using Winsock2 sockets
-int debug = 0;
-char *ip = "";
+int debug = 0; // Variable for debug mode
+char *ip = ""; // Variable for IP
 char logName[50] = "log.txt"; //name of the file to initialize in start()  FILE * log;
-int ttl = 1;
-int code = 0;
-char info_TTL[100] = "     Status: TTL set value "; //запись TTL
-char *str_TTL = "";
-char res_info_TTL[100] = "";
+int ttl = 1; // Variable for TTL value
+int code = 0; // Variable for code 
+char info_TTL[100] = "     Status: TTL set value "; // String with TTL status
+char *str_TTL = ""; // Variable for conversion TTL to *Char
+char res_info_TTL[100] = ""; // Variable for information TTL
 char codeStr[50] = ""; // Variable for error code
 char finStr[50] = "\nNetwork  error: "; // Variable for error text
-char isLastHop = 0;
+char isLastHop = 0; // Variable for last hop
 
 /**
   Function start - creates or opens
@@ -120,69 +120,68 @@ int analyze(char *ipAddress) {
   Parsing the received package
 **/
 void getReply() {
-    IpHeader *iphdr = NULL;
-    IcmpHeader *icmphdr = NULL;
-    unsigned short iphdrlen = 0;
-    struct hostent *lpHostent = NULL;
-    struct in_addr inaddr = ((SOCKADDR_IN *) &from)->sin_addr;
-    char *buff = "";
-    char *message = "";
-    char *ip = "";
+    IpHeader *iphdr = NULL; // Init and clear structure IPheader
+    IcmpHeader *icmphdr = NULL; // Init and clear structure ICMPheader
+    unsigned short iphdrlen = 0; // Init and clear variable
+    struct hostent *lpHostent = NULL; // Init and clear structure
+    struct in_addr inaddr = ((SOCKADDR_IN *) &from)->sin_addr; // Init structure and conversion IP address from server received
+    char *buff = ""; // Buffer variable for conversion
+    char *message = ""; // Variable for message
+    char *ip = ""; // Variable for IP address
 
-    iphdr = (IpHeader *) recvbuf;
+    iphdr = (IpHeader *) recvbuf; // Get data from buffer
     // Number of 32-bit words * 4 = bytes
-    iphdrlen = iphdr->h_len * 4;
+    iphdrlen = iphdr->h_len * 4; // Calculating count byte, received from server
 
-    if (ret < iphdrlen + ICMP_MIN) {
+    if (ret < iphdrlen + ICMP_MIN) { // Check on minimal count byte
         return;
     }
 
-    icmphdr = (IcmpHeader *) (recvbuf + iphdrlen);
+    icmphdr = (IcmpHeader *) (recvbuf + iphdrlen); // Get the type of response from server
 
-    switch (icmphdr->i_type) {
+    switch (icmphdr->i_type) { // Сhecking the type of response from server
         case ICMP_ECHOREPLY:     // Response from destination
-            lpHostent = gethostbyaddr((const char *) &((SOCKADDR_IN *) &from)->sin_addr, AF_INET, sizeof(struct in_addr));
-            if (lpHostent != NULL) {
-                char *hname = lpHostent->h_name;
-                ip = inet_ntoa(inaddr);
-                message = "";
-                snprintf(message,  sizeof hname + sizeof ip + 29*8, "     Status: Recive from IP address %s(%s)", hname, ip);
-                printf("%2d  %s (%s)\n", ttl, hname, ip);
-                printLog(message);
-                isLastHop = 1;
+            lpHostent = gethostbyaddr((const char *) &((SOCKADDR_IN *) &from)->sin_addr, AF_INET, sizeof(struct in_addr)); // Get IP address and domain from server
+            if (lpHostent != NULL) { // Checking structure for error
+                char *hname = lpHostent->h_name; // Get domain name from "hostent" structure
+                ip = inet_ntoa(inaddr); // Get IP address from "in_addr" structure
+                message = ""; // Clear message variable
+                snprintf(message,  sizeof hname + sizeof ip + 29*8, "     Status: Recive from IP address %s(%s)", hname, ip); // Write formatted message in variable
+                printf("%2d  %s (%s)\n", ttl, hname, ip);  // Show recive from IP address in console
+                printLog(message); // Add status recive from IP address to log file
+                isLastHop = 1; // Set last hop
             }
             else{
-                // Make log message
-                ip = inet_ntoa(inaddr);
-                message = "";
-                snprintf(message,  sizeof ip + 29*8, "     Status: Recive from IP address %s", ip);
-                printf("%2d  %s\n", ttl, ip);
-                printLog(message);
-                isLastHop = 1;
+                ip = inet_ntoa(inaddr);// Get IP address from "in_addr" structure
+                message = ""; // Clear message variable
+                snprintf(message,  sizeof ip + 29*8, "     Status: Recive from IP address %s", ip);// Write formatted message in variable
+                printf("%2d  %s\n", ttl, ip); // Show recive from IP address in console
+                printLog(message); // Add status recive from IP address to log file
+                isLastHop = 1; // Set last hop
             }
             break;
         case ICMP_TIMEOUT:      // Response from router along the way
-            ip = inet_ntoa(inaddr);
-            message = itoa(ttl, buff, 10);
-            strcat(message, "    Status: Recive from IP address ");
-            strcat(message, ip);
-            printf("%2d  %s\n", ttl, ip);
-            printLog(message);
+            ip = inet_ntoa(inaddr); // Get IP address from "in_addr" structure
+            message = itoa(ttl, buff, 10); // Convert TTL (Int to *Char)
+            strcat(message, "    Status: Recive from IP address "); // Concat message and status recive
+            strcat(message, ip); // Concat message and IP address
+            printf("%2d  %s\n", ttl, ip); // Show recive from IP address in console
+            printLog(message); // Add status recive to log file
             break;
         case ICMP_DESTUNREACH:  // Can't reach the destination at all
-            ip = inet_ntoa(inaddr);
-            itoa(ttl, message, 10);
-            strcat(message, " ");
-            strcat(message, ip);
-            strcat(message, " reports: Host is unreachable.");
-            printf("%2d  %s  reports: Host is unreachable\n", ttl, ip);
-            printLog(message);
+            ip = inet_ntoa(inaddr); // Get IP address from "in_addr" structure
+            itoa(ttl, message, 10);  // Convert TTL (Int to *Char)
+            strcat(message, " "); // Add space in error message
+            strcat(message, ip); // Concat error message and IP address
+            strcat(message, " reports: Host is unreachable."); // Concat error message and "Host is unreachable"
+            printf("%2d  %s  reports: Host is unreachable\n", ttl, ip);  // Show error message in console
+            printLog(message); // Add error "Host is unreachable" to log file
             break;
         default:
-            itoa(ttl, message, 10);
-            strcat(message, " non-echo type recvd.");
-            printf("non-echo type %d recvd\n", icmphdr->i_type);
-            printLog(message);
+            itoa(ttl, message, 10); // Convert TTL (Int to *Char)
+            strcat(message, " non-echo type recvd."); // Concat TTL and message
+            printf("non-echo type %d recvd\n", icmphdr->i_type); // Show error message in console
+            printLog(message); // Add error "non-echo type recvd" to log file
             break;
     }
     ttl++;
@@ -384,7 +383,7 @@ int main(int argc, char *argv[]) {
                         switch (receiveICMP()) {
                             case 0: // go to the next IP address
                                 printLog(res_info_TTL); // Add message "recive from IP and TTL" to log
-                                getReply();
+                                getReply(); // Parse received data after request 
                                 break;
                             case 1: // Reached their destination
                                 printLog("     Traceroute complete successfully");  // Add message "traceroute complete" to log
