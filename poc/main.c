@@ -372,44 +372,43 @@ Displays an error in the log
 @param code - network error code
 **/
 void diagnosticError(int code) {
-
-    itoa(code, codeStr, 10); // Convert to string
+    itoa(code, codeStr, 10); // Convert code (Int to *Char)
     strcat(finStr, codeStr); // Concat strings
-    printf(finStr); // Print error
+    printf(finStr); // Print error in console
 }
 
 int main(int argc, char *argv[]) {
-    switch (start(argc, argv)) {
+    switch (start(argc, argv)) {  // Starting programm and open log file
         case TRUE:
-            switch (analyze(ip)) {
+            switch (analyze(ip)) { // Starting analyze IP-address for checking something error
                 case TRUE:
                     while (TRUE) {
-                        sendRequest(ip, ttl);
+                        sendRequest(ip, ttl); // Send request to IP adress
                         switch (receiveICMP()) {
                             case 0: // go to the next IP address
-                                printLog(res_info_TTL);
+                                printLog(res_info_TTL); // Add message "recive from IP and TTL" to log
                                 getReply();
                                 break;
                             case 1: // Reached their destination
-                                printLog("     Traceroute complete successfully");
-                                finish();
+                                printLog("     Traceroute complete successfully");  // Add message "traceroute complete" to log
+                                finish(); // Close programm
                                 break;
                             case 2: // Errors
-                                diagnosticError(WSAGetLastError());
-                                printLog(finStr);
-                                finish();
+                                diagnosticError(WSAGetLastError()); // Starting diagnostic with last error code
+                                printLog(finStr);   // Add message error to log
+                                finish(); // Close programm
                                 break;
                         }
                     }
                     break;
                 case FALSE:
-                    printLog("Invalid adress error\n");
-                    finish();
+                    printLog("Invalid adress error\n"); // Add message "invalid adress error" to log
+                    finish(); // Close programm
                     break;
             }
             break;
         case FALSE:
-            finish();
+            finish(); // Close programm
             break;
     }
     return 0;
