@@ -12,6 +12,10 @@
 #include "data.h" // file with structures and variables
 #include "network.h" // file with auxiliary functions
 
+#include <errno.h> 	// header file defines the integer variable errno, which 
+       							// is set by system calls and some library functions in the event of an
+       							// error to indicate what went wrong.
+
 #pragma comment(lib, "ws2_32.lib") // library for using Winsock2 sockets
 int debug = 0; // Variable for debug mode
 char *ip = ""; // Variable for IP
@@ -151,7 +155,12 @@ void getReply() {
                 message = ""; // Clear message variable
                 snprintf(message,  sizeof hname + sizeof ip + 29*8, "     Status: Recive from IP address %s(%s)", hname, ip); // Write formatted message in variable
                 printf("%2d  %s (%s)\n", ttl, hname, ip);  // Show recive from IP address in console
-                printLog(message); // Add status recive from IP address to log file
+                errno = 0;
+                switch(printLog(message)) { // Add status recive from IP address to log file
+                  case FALSE:
+                    codeOS();
+                    finish();
+                 }
                 isLastHop = 1; // Set last hop
             }
             else{
@@ -169,7 +178,13 @@ void getReply() {
             strcat(message, "    Status: Recive from IP address "); // Concat message and status recive
             strcat(message, ip); // Concat message and IP address
             printf("%2d  %s\n", ttl, ip); // Show recive from IP address in console
-            printLog(message); // Add status recive to log file
+            
+            errno = 0;
+            switch(printLog(message)) { /// Add status recive to log file
+              case FALSE:
+                codeOS();
+                finish();
+             }
             break;
         case ICMP_DESTUNREACH:  // Can't reach the destination at all
             ip = inet_ntoa(inaddr); // Get IP address from "in_addr" structure
@@ -178,13 +193,25 @@ void getReply() {
             strcat(message, ip); // Concat error message and IP address
             strcat(message, " reports: Host is unreachable."); // Concat error message and "Host is unreachable"
             printf("%2d  %s  reports: Host is unreachable\n", ttl, ip);  // Show error message in console
-            printLog(message); // Add error "Host is unreachable" to log file
+             
+            errno = 0;
+            switch(printLog(message)) { // Add error "Host is unreachable" to log file
+              case FALSE:
+                codeOS();
+                finish();
+             }
             break;
         default:
             itoa(ttl, message, 10); // Convert TTL (Int to *Char)
             strcat(message, " non-echo type recvd."); // Concat TTL and message
             printf("non-echo type %d recvd\n", icmphdr->i_type); // Show error message in console
-            printLog(message); // Add error "non-echo type recvd" to log file
+            
+            errno = 0;
+            switch(printLog(message)) { // Add error "non-echo type recvd" to log file
+              case FALSE:
+                codeOS();
+                finish();
+             }
             break;
     }
     ttl++;
@@ -213,7 +240,12 @@ int receiveICMP() {
             strcat(message, "    Receive Request timed out."); // Add message to "message" variable
 
             printf("%2d  Receive Request timed out.\n", ttl);   // Show message in console
-            printLog(message);  // Add message to log
+            errno = 0;
+            switch(printLog(message)) { // Add message to log
+              case FALSE:
+                codeOS();
+                finish();
+             }
 
             itoa(ttl, str_TTL, 10); //Convert TTL to *Char
             strcpy(res_info_TTL, info_TTL); //Add record TTL
@@ -275,14 +307,26 @@ void sendRequest(char *ip, int ttl) {
             strcat(message, " Send request timed out."); // Concat string
 
             printf("%2d  Send request timed out.\n", ttl); // Print timeout error
-            printLog(message); // Add "time out" message to log
+          
+            errno = 0;
+            switch(printLog(message)) { // Add "time out" message to log
+              case FALSE:
+                codeOS();
+                finish();
+             }
         }
         message = "sendto() failed: "; // Error message
         itoa(WSAGetLastError(), errorCode, 10); // Convert error code (Int to *Char)
         strcat(message, errorCode); // Concat strings
 
         printf("sendto() failed: %d\n", WSAGetLastError()); // Show message in console
-        printLog(message); // Add "send failed" message to log
+      
+        errno = 0;
+        switch(printLog(message)) { // Add "send failed" message to log
+          case FALSE:
+            codeOS();
+            finish();
+         }
         finish();   // Close programm
     }
 }
@@ -316,28 +360,8 @@ void finish() {
 /**
   No description TODO: codeOS
 **/
-int codeOS(FILE *log, int code) {
-    char errStr1[] = "???? - 1";
-    char errStr2[] = "???? - 2";
-    char errStr3[] = "???? - 3";
-    switch (code) {
-        case 1:
-            fputs("???? - 1", log);
-            printf(errStr1);
-            // fwrite(errStr);
-            break;
-        case 2:
-            printf(errStr2);
-            fputs("??", log);
-            //fwrite(errStr);
-            return 1;
-        case 3:
-            fputs("???? - 3", log);
-            printf(errStr3);
-            // fwrite(errStr);
-            break;
-    }
-    return 0;
+void codeOS() {
+  perror("Error: ");
 }
 
 /**
@@ -384,23 +408,48 @@ int main(int argc, char *argv[]) {
                         sendRequest(ip, ttl); // Send request to IP adress
                         switch (receiveICMP()) {
                             case 0: // go to the next IP address
-                                printLog(res_info_TTL); // Add message "recive from IP and TTL" to log
+                                
+                                errno = 0;
+                                switch(printLog(res_info_TTL)) { // Add message "recive from IP and TTL" to log
+                                  case FALSE:
+                                    codeOS();
+                                    finish();
+                                 }
+                            
                                 getReply(); // Parse received data after request 
                                 break;
                             case 1: // Reached their destination
-                                printLog("     Traceroute complete successfully");  // Add message "traceroute complete" to log
+                                
+                                errno = 0;
+                                switch(printLog("     Traceroute complete successfully")) { // Add message "traceroute complete" to log
+                                  case FALSE:
+                                    codeOS();
+                                    finish();
+                                 }
                                 finish(); // Close programm
                                 break;
                             case 2: // Errors
                                 diagnosticError(WSAGetLastError()); // Starting diagnostic with last error code
-                                printLog(finStr);   // Add message error to log
+                                  
+                                errno = 0;
+                                switch(printLog(finStr)) { // Add message error to log
+                                  case FALSE:
+                                    codeOS();
+                                    finish();
+                                 }
                                 finish(); // Close programm
                                 break;
                         }
                     }
                     break;
                 case FALSE:
-                    printLog("Invalid adress error\n"); // Add message "invalid adress error" to log
+                
+                    errno = 0;
+                    switch(printLog("Invalid adress error\n")) { // Add message "invalid adress error" to log
+                      case FALSE:
+                        codeOS();
+                        finish();
+                     }
                     finish(); // Close programm
                     break;
             }
