@@ -259,7 +259,7 @@ void sendRequest(char *ip, int ttl) {
     char *errorCode = ""; // Variable for error code
     char *message = ""; // Variable for print message
 
-    set_ttl(sockRaw, ttl);
+    set_ttl(sockRaw, ttl); // Set new TTL for next sending
 
     //
     // Fill in some more data in the ICMP header
@@ -273,19 +273,19 @@ void sendRequest(char *ip, int ttl) {
     bwrote = sendto(sockRaw, icmp_data, datasize, 0, (SOCKADDR * ) & dest, sizeof(dest)); // Send packet with socket
     if (bwrote == SOCKET_ERROR) { // Check for socket error
         if (WSAGetLastError() == WSAETIMEDOUT) {  // Time out error
-            itoa(ttl, message, 10); // Int TTL to string
+            itoa(ttl, message, 10); // Convert error code (Int to *Char)
             strcat(message, " Send request timed out."); // Concat string
 
             printf("%2d  Send request timed out.\n", ttl); // Print timeout error
-            printLog(message); // Print timeout error to log
+            printLog(message); // Add "time out" message to log
         }
         message = "sendto() failed: "; // Error message
-        itoa(WSAGetLastError(), errorCode, 10); // Int code to string
+        itoa(WSAGetLastError(), errorCode, 10); // Convert error code (Int to *Char)
         strcat(message, errorCode); // Concat strings
 
-        printf("sendto() failed: %d\n", WSAGetLastError()); // Print error
-        printLog(message); // Print error to log
-        finish();
+        printf("sendto() failed: %d\n", WSAGetLastError()); // Show message in console
+        printLog(message); // Add "send failed" message to log
+        finish();   // Close programm
     }
 }
 
@@ -319,12 +319,12 @@ void finish() {
   No description TODO: codeOS
 **/
 int codeOS(FILE *log, int code) {
-    char errStr1[] = "�������� ����� �����, ��� ������ - 1";
-    char errStr2[] = "�� ��, ��� � ��� 3? � ��, ��� ������ - 2";
-    char errStr3[] = "�� ���������� ��� �����(��������), ��� ������ - 3";
+    char errStr1[] = "???? - 1";
+    char errStr2[] = "???? - 2";
+    char errStr3[] = "???? - 3";
     switch (code) {
         case 1:
-            fputs("�������� ����� �����, ��� ������ - 1", log);
+            fputs("???? - 1", log);
             printf(errStr1);
             // fwrite(errStr);
             break;
@@ -334,7 +334,7 @@ int codeOS(FILE *log, int code) {
             //fwrite(errStr);
             return 1;
         case 3:
-            fputs("�� ���������� ��� �����(��������), ��� ������ - 3", log);
+            fputs("???? - 3", log);
             printf(errStr3);
             // fwrite(errStr);
             break;
