@@ -33,27 +33,29 @@ char isLastHop = 0;
 **/
 int start(int argc, char *argv[]) {
 
-    char time_str[128] = ""; //variable for time
+    char time_str[128] = ""; // Variable for time
     int i = 0;
-    char info[100] = "\n      Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
+    char info[100] = "\n      Status: start log ... \r"; // Variable with the status of launching()
     if (debug == 0) {
+        // Save user IP address
         if (argc < 2) {
-          usage(argv[0]);
+          usage(argv[0]); // Show message in console about how to use this programm
         }
-        strcat(ip, argv[1]);
+        strcat(ip, argv[1]); // Save user IP address in ip variable
     }else{
-        strcat(ip, "84.242.3.221");
+        strcat(ip, "84.242.3.221"); // IP adress for testing
     }
-    fp = fopen(logName, "a+");
+    fp = fopen(logName, "a+"); // Trying to open log file
     if (fp != NULL) {
-        time_t time_now = time(NULL);// system time 
-        struct tm *newtime = localtime(&time_now); // system time conversion to local time   
-        strftime(time_str, 128, "Date:  %x %A %X", newtime); //converts local time into str
+        // Open log file
+        time_t time_now = time(NULL); // System time variable
+        struct tm *newtime = localtime(&time_now); // System time conversion to local time   
+        strftime(time_str, 128, "Date:  %x %A %X", newtime); // Convert local time to Char[]
         for (i = 0; i < strlen(time_str); i++) {
-            fputc(time_str[i], fp); // time into log file Пишется время в лог
+            fputc(time_str[i], fp); // Writing time to log file
         }
         for (i = 0; i < strlen(info); i++) {
-            fputc(info[i], fp); // state into lof fileПишется состояние в лог
+            fputc(info[i], fp); // Writing state to log file
         }
         return TRUE;
     }
@@ -61,13 +63,11 @@ int start(int argc, char *argv[]) {
     return FALSE;
 }
 
-
 /**
   Parsing and ip ip address check
   @param *ipAddress - ip address name
   @return found mistake - switch to finish
 **/
-
 int analyze(char *ipAddress) {
     int i = 0;
     int count_point = 0;
