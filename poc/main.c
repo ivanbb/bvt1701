@@ -108,7 +108,7 @@ int analyze(char *ipAddress) {
             hasError = 1;
         }
     }
-    hasError = 0;
+
     if (hasError == 1) {
         printf("Invalid adress error\n");
         return FALSE;
