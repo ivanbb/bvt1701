@@ -155,6 +155,7 @@ void getReply() {
                 isLastHop = 1;
             }
             else{
+                // Make log message
                 ip = inet_ntoa(inaddr);
                 message = "";
                 snprintf(message,  sizeof ip + 29*8, "     Status: Recive from IP address %s", ip);
