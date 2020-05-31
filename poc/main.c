@@ -7,7 +7,7 @@
 
 #include <winsock2.h> // library for using Winsock2 sockets
 #include <ws2tcpip.h> // library for using TCP / IP connection
-#include <time.h>		// header file of the standard library of the programming language C, containing types and functions for working with date and time
+#include <time.h>        // header file of the standard library of the programming language C, containing types and functions for working with date and time
 
 #include "data.h" // file with structures and variables
 #include "network.h" // file with auxiliary functions
@@ -20,7 +20,9 @@ int ttl = 1;
 int code = 0;
 char info_TTL[100] = "    Status: TTL set value "; //запись TTL
 char str_TTL[10] = "";
-
+char res_info_TTL[100] = "";
+char codeStr[50] = ""; // Variable for error code
+char finStr[50] = "\nNetwork  error: "; // Variable for error text
 
 /**
   Function start - creates or opens
@@ -32,22 +34,20 @@ int start(int argc, char *argv[]) {
 
     char time_str[128] = ""; //variable for time
     int i = 0;
-    char info[100] = "     Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
-
+    char info[100] = "\n     Status: start log ... \r"; // variable with the status of launching(?) статусом запуска
     if (argc < 2) {
         usage(argv[0]);
     }
-
     strcat(ip, argv[1]);
     fp = fopen(logName, "a+");
     if (fp != NULL) {
         time_t time_now = time(NULL);// system time 
         struct tm *newtime = localtime(&time_now); // system time conversion to local time   
         strftime(time_str, 128, "Date:  %x %A %X", newtime); //converts local time into str
-        for (i=0; i < strlen(time_str); i++) {
+        for (i = 0; i < strlen(time_str); i++) {
             fputc(time_str[i], fp); // time into log file Пишется время в лог
         }
-        for (i=0; i < strlen(info); i++) {
+        for (i = 0; i < strlen(info); i++) {
             fputc(info[i], fp); // state into lof fileПишется состояние в лог
         }
         return TRUE;
@@ -68,7 +68,8 @@ int analyze(char *ipAddress) {
     int count_point = 0;
     int hasError = 0;
 
-    for (i = 0; i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
+    for (i = 0;
+         i < strlen(ipAddress); i++) // check ip for non-number or non dot symbols, if such symbols are there, return 0
     {
         if (ipAddress[i] == '.')
             count_point++;
@@ -76,9 +77,10 @@ int analyze(char *ipAddress) {
     if (count_point == 1)// if there is number return 1
         hasError = 1;
 
-    for (i = 0; i <strlen(ipAddress); i++) //loop if number between 0 and 9 or point
+    for (i = 0; i < strlen(ipAddress); i++) //loop if number between 0 and 9 or point
     {
-        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') || ipAddress[i] == '.')) //check value if number between 0 and 9 or point
+        if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') ||
+              ipAddress[i] == '.')) //check value if number between 0 and 9 or point
         {
             hasError = 1;
         }
@@ -101,15 +103,13 @@ int analyze(char *ipAddress) {
             hasError = 1;
         }
     }
-if (hasError == 1) {
-    printLog("     Invalid adress error\r");
-    printf("Invalid adress error\n");
-    //finish();
-    return FALSE;
-} else {
-    createSocket(ip);
-    return TRUE;
-}
+    if (hasError == 1) {
+        printf("Invalid adress error\n");
+        return FALSE;
+    } else {
+        createSocket(ip);
+        return TRUE;
+    }
 }
 
 /**
@@ -200,14 +200,16 @@ int getReply(char *buf, int bytes, SOCKADDR_IN *from, int ttl) {
                     1 - destination node reached,
                     2 - receiving error)
 **/
-int receiveICMP(int ttl) {
+int receiveICMP() {
     // Read a packet back from the destination or a router along
     // the way.
     //
     int reply = 0; // variable for reply code
     char *message = ""; // variable for message text
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
-    if (ttl > maxhops){
+    if (ttl > maxhops) {
+        ttl++;
+        printf("Reached 30 hops. Stopping program");
         return 2;
     }
     if (ret == SOCKET_ERROR) {
@@ -217,18 +219,29 @@ int receiveICMP(int ttl) {
 
             printf("%2d  Receive Request timed out.\n", ttl);
             printLog(message);
-            return 0;
-        }
-        return 2;
-    }
-    //
-    // Decode the response to see if the ICMP response is from a
-    // router along the way or whether it has reached the destination.
-    //
-    //  done = decode_resp(recvbuf, ret, &from, ttl);
 
-    reply = getReply(recvbuf, ret, &from, ttl);
-    return reply;
+            itoa(ttl, str_TTL, 10); //TTL преобразуем в char
+            strcpy(res_info_TTL, info_TTL);
+            strcat(res_info_TTL, str_TTL); // добавили TTL в info
+            ttl++;
+            return 0;
+        } else {
+            ttl++;
+            printf("NetworkError");
+            return 2;
+        }
+    }
+        //
+        // Decode the response to see if the ICMP response is from a
+        // router along the way or whether it has reached the destination.
+        //
+        //  done = decode_resp(recvbuf, ret, &from, ttl);
+    else {
+        ttl++;
+        reply = getReply(recvbuf, ret, &from, ttl);
+
+        return reply;
+    }
 }
 
 /**
@@ -356,8 +369,6 @@ Displays an error in the log
 @param code - network error code
 **/
 void diagnosticError(int code) {
-    char codeStr[50] = ""; // Variable for error code
-    char finStr[50] = "\nNetwork  error: "; // Variable for error text
 
     itoa(code, codeStr, 10); // Convert to string
     strcat(finStr, codeStr); // Concat strings
@@ -366,37 +377,31 @@ void diagnosticError(int code) {
 }
 
 
-
-
 int main(int argc, char *argv[]) {
-
     switch (start(argc, argv)) {
         case TRUE:
             switch (analyze(ip)) {
-                case TRUE:         
-                   // while ((ttl < maxhops) && (!done)) {  
+                case TRUE:
                     while (TRUE) {
                         sendRequest(ip, ttl);
-                        switch (receiveICMP(ttl)) {
+                        switch (receiveICMP()) {
                             case 0: // go to the next IP address
-                                itoa(ttl, str_TTL, 10); //TTL преобразуем в char
-                                strcat(info_TTL, str_TTL); // добавили TTL в info
-                                printLog(info_TTL);
-                                ttl++;
+                                printLog(res_info_TTL);
                                 break;
                             case 1: // Reached their destination
-                                printLog("    Traceroute complete succesfully");
+                                printLog("    Traceroute complete successfully");
                                 finish();
-                                done = 1;
                                 break;
                             case 2: // Errors
                                 diagnosticError(WSAGetLastError());
+                                printLog(finStr);
                                 finish();
                                 break;
                         }
                     }
                     break;
                 case FALSE:
+                    printLog("Invalid adress error\n");
                     finish();
                     break;
             }
@@ -404,7 +409,7 @@ int main(int argc, char *argv[]) {
         case FALSE:
             finish();
             break;
-    }   
+    }
     return 0;
 }
 
