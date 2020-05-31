@@ -77,7 +77,7 @@ int analyze(char *ipAddress) {
     int count_point = 0; // Variable for count points in IP address
     int hasError = 0; // Variable for check errors
 
-    for (i = 0; i < strlen(ipAddress); i++) // Check ip for non-number or non dot symbols, if such symbols are there, return 0
+    for (i = 0; i <= strlen(ipAddress); i++) // Check ip for non-number or non dot symbols, if such symbols are there, return 0
     {
         if (ipAddress[i] == '.')
             count_point++;
@@ -86,7 +86,6 @@ int analyze(char *ipAddress) {
         hasError = 0;// Set hasError 0
     else if (count_point ==3) 
     {
-
     for (i = 0; i < strlen(ipAddress); i++) // Loop if number between 0 and 9 or point
     {
         if (!((ipAddress[i] >= '0' && ipAddress[i] <= '9') ||
@@ -105,15 +104,17 @@ int analyze(char *ipAddress) {
             str[p] = ipAddress[i]; // Save IP address octet
         }
         str[p] = '\0';
-        if (str != "")
-            hasError = 1;
         if (str[0] != '0') // Check if is a number(does not begin with zero)
             a = atoi(str);
         if (a > 255) {  // If ip’s octet is higher than 255 return 0
             hasError = 1;
         }
+        if (ipAddress[i]=='.' && ipAddress[i+1]=='\0')
+            hasError = 1;
     }
     }
+    else 
+        hasError = 1;
     if (hasError == 1) {
         printf("Invalid adress error\n"); // Show error message in console
         return FALSE;
