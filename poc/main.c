@@ -78,8 +78,10 @@ int analyze(char *ipAddress) {
         if (ipAddress[i] == '.')
             count_point++;
     }
-    if (count_point == 1)// If there is number return 1
-        hasError = 1;// Set hasError 1
+    if (count_point < 3)// If there is number return 1
+        hasError = 0;// Set hasError 0
+    else if (count_point ==3) 
+    {
 
     for (i = 0; i < strlen(ipAddress); i++) // Loop if number between 0 and 9 or point
     {
@@ -89,10 +91,8 @@ int analyze(char *ipAddress) {
             hasError = 1;// Set hasError 1
         }
     }
-
-    if (count_point != 3)// If more then 3 return 0
-        hasError = 1; // Set hasError 1
-    for (i = 0; i < strlen(ipAddress); i++) //Check IP numbers
+      
+    for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
     {
         char str[10] = ""; // Variable for IP address
         int p = 0;
@@ -101,11 +101,14 @@ int analyze(char *ipAddress) {
             str[p] = ipAddress[i]; // Save IP address octet
         }
         str[p] = '\0';
+        if (str != "")
+            hasError = 1;
         if (str[0] != '0') // Check if is a number(does not begin with zero)
             a = atoi(str);
         if (a > 255) {  // If ip’s octet is higher than 255 return 0
             hasError = 1;
         }
+    }
     }
     if (hasError == 1) {
         printf("Invalid adress error\n"); // Show error message in console
@@ -198,8 +201,7 @@ int receiveICMP() {
     // Read a packet back from the destination or a router along
     // the way.
     //
-    int reply = 0; // Variable for reply code
-    char *message = ""; // Variable for message text
+    char *message = ""; // variable for message text
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // Receiving
     if (ttl > maxhops) {
         printf("Reached 30 hops. Stopping program");    // Show message in console
