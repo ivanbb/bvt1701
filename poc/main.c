@@ -202,29 +202,29 @@ int receiveICMP() {
     // Read a packet back from the destination or a router along
     // the way.
     //
-    int reply = 0; // variable for reply code
-    char *message = ""; // variable for message text
-    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // receiving
+    int reply = 0; // Variable for reply code
+    char *message = ""; // Variable for message text
+    ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // Receiving
     if (ttl > maxhops) {
-        printf("Reached 30 hops. Stopping program");
+        printf("Reached 30 hops. Stopping program");    // Show message in console
         return 2;
     }
     if (ret == SOCKET_ERROR) {
         if (WSAGetLastError() == WSAETIMEDOUT) {
-            itoa(ttl, message, 10);
-            strcat(message, "    Receive Request timed out.");
+            itoa(ttl, message, 10); // Convert TTL to *Char
+            strcat(message, "    Receive Request timed out."); // Add message to "message" variable
 
-            printf("%2d  Receive Request timed out.\n", ttl);
-            printLog(message);
+            printf("%2d  Receive Request timed out.\n", ttl);   // Show message in console
+            printLog(message);  // Add message to log
 
-            itoa(ttl, str_TTL, 10); //TTL преобразуем в char
-            strcpy(res_info_TTL, info_TTL);
-            strcat(res_info_TTL, str_TTL); // добавили TTL в info
+            itoa(ttl, str_TTL, 10); //Convert TTL to *Char
+            strcpy(res_info_TTL, info_TTL); //Add record TTL
+            strcat(res_info_TTL, str_TTL);  // Add TTL to info
             ttl++;
             return 0;
         } else {
             ttl++;
-            printf("NetworkError");
+            printf("NetworkError"); // Show message in console
             return 2;
         }
     }
@@ -235,14 +235,14 @@ int receiveICMP() {
         //  done = decode_resp(recvbuf, ret, &from, ttl);
     else {
         if (isLastHop) {
-            itoa(ttl, str_TTL, 10); //TTL преобразуем в char
-            strcpy(res_info_TTL, info_TTL);
-            strcat(res_info_TTL, str_TTL); // добавили TTL в info
+            itoa(ttl, str_TTL, 10); //Convert TTL to *Char
+            strcpy(res_info_TTL, info_TTL); //Add record TTL
+            strcat(res_info_TTL, str_TTL); // Add TTL to info
             return 1;
         } else {
-            itoa(ttl, str_TTL, 10); //TTL преобразуем в char
-            strcpy(res_info_TTL, info_TTL);
-            strcat(res_info_TTL, str_TTL); // добавили TTL в info
+            itoa(ttl, str_TTL, 10); //Convert TTL to *Char
+            strcpy(res_info_TTL, info_TTL); //Add record TTL
+            strcat(res_info_TTL, str_TTL); // Add TTL to info
             return 0;
         }
     }
@@ -378,7 +378,6 @@ void diagnosticError(int code) {
     printf(finStr); // Print error
 }
 
-
 int main(int argc, char *argv[]) {
     switch (start(argc, argv)) {
         case TRUE:
@@ -415,8 +414,3 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
-
-
-
-
-
