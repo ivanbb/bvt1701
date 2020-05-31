@@ -361,7 +361,7 @@ void finish() {
   No description TODO: codeOS
 **/
 void codeOS() {
-  perror("Error: ");
+  perror("Error");
 }
 
 /**
@@ -455,6 +455,7 @@ int main(int argc, char *argv[]) {
             }
             break;
         case FALSE:
+            codeOS();
             finish(); // Close programm
             break;
     }
