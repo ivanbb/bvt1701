@@ -12,7 +12,7 @@
 #include "data.h" // file with structures and variables
 #include "network.h" // file with auxiliary functions
 
-#include <errno.h> 	// header file defines the integer variable errno, which 
+#include <errno.h> 	// header file defines the integer variable errno, which
        							// is set by system calls and some library functions in the event of an
        							// error to indicate what went wrong.
 
@@ -84,7 +84,7 @@ int analyze(char *ipAddress) {
     }
     if (count_point < 3)// If there is number return 1
         hasError = 0;// Set hasError 0
-    else if (count_point ==3) 
+    else if (count_point ==3)
     {
     for (i = 0; i < strlen(ipAddress); i++) // Loop if number between 0 and 9 or point
     {
@@ -94,7 +94,7 @@ int analyze(char *ipAddress) {
             hasError = 1;// Set hasError 1
         }
     }
-      
+
     for (i = 0; i < strlen(ipAddress); i++)//check IP numbers
     {
         char str[10] = ""; // Variable for IP address
@@ -113,13 +113,15 @@ int analyze(char *ipAddress) {
             hasError = 1;
     }
     }
-    else 
+    else
         hasError = 1;
     if (hasError == 1) {
         printf("Invalid adress error\n"); // Show error message in console
+        errno = 0;
         return FALSE;
     } else {
         createSocket(ip); // Create soket with IP address
+        errno = 0;
         return TRUE;
     }
 }
@@ -179,7 +181,7 @@ void getReply() {
             strcat(message, "    Status: Recive from IP address "); // Concat message and status recive
             strcat(message, ip); // Concat message and IP address
             printf("%2d  %s\n", ttl, ip); // Show recive from IP address in console
-            
+
             errno = 0;
             switch(printLog(message)) { /// Add status recive to log file
               case FALSE:
@@ -194,7 +196,7 @@ void getReply() {
             strcat(message, ip); // Concat error message and IP address
             strcat(message, " reports: Host is unreachable."); // Concat error message and "Host is unreachable"
             printf("%2d  %s  reports: Host is unreachable\n", ttl, ip);  // Show error message in console
-             
+
             errno = 0;
             switch(printLog(message)) { // Add error "Host is unreachable" to log file
               case FALSE:
@@ -206,7 +208,7 @@ void getReply() {
             itoa(ttl, message, 10); // Convert TTL (Int to *Char)
             strcat(message, " non-echo type recvd."); // Concat TTL and message
             printf("non-echo type %d recvd\n", icmphdr->i_type); // Show error message in console
-            
+
             errno = 0;
             switch(printLog(message)) { // Add error "non-echo type recvd" to log file
               case FALSE:
@@ -233,6 +235,7 @@ int receiveICMP() {
     ret = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); // Receiving
     if (ttl > maxhops) {
         printf("Reached 30 hops. Stopping program");    // Show message in console
+        errno = 0;
         return 2;
     }
     if (ret == SOCKET_ERROR) {
@@ -252,10 +255,12 @@ int receiveICMP() {
             strcpy(res_info_TTL, info_TTL); //Add record TTL
             strcat(res_info_TTL, str_TTL);  // Add TTL to info
             ttl++;
+            errno = 0;
             return 0;
         } else {
             ttl++;
             printf("NetworkError"); // Show message in console
+            errno = 0;
             return 2;
         }
     }
@@ -269,11 +274,13 @@ int receiveICMP() {
             itoa(ttl, str_TTL, 10); //Convert TTL to *Char
             strcpy(res_info_TTL, info_TTL); //Add record TTL
             strcat(res_info_TTL, str_TTL); // Add TTL to info
+            errno = 0;
             return 1;
         } else {
             itoa(ttl, str_TTL, 10); //Convert TTL to *Char
             strcpy(res_info_TTL, info_TTL); //Add record TTL
             strcat(res_info_TTL, str_TTL); // Add TTL to info
+            errno = 0;
             return 0;
         }
     }
@@ -308,7 +315,7 @@ void sendRequest(char *ip, int ttl) {
             strcat(message, " Send request timed out."); // Concat string
 
             printf("%2d  Send request timed out.\n", ttl); // Print timeout error
-          
+
             errno = 0;
             switch(printLog(message)) { // Add "time out" message to log
               case FALSE:
@@ -321,7 +328,7 @@ void sendRequest(char *ip, int ttl) {
         strcat(message, errorCode); // Concat strings
 
         printf("sendto() failed: %d\n", WSAGetLastError()); // Show message in console
-      
+
         errno = 0;
         switch(printLog(message)) { // Add "send failed" message to log
           case FALSE:
@@ -339,7 +346,7 @@ Closes the program and log file
 void finish() {
     char time_str[128] = ""; // Variable for end time
     int i = 0; // Counter for strings
-    char info[100] = "      Status: stop log ... \r"; // Variable for status
+    char info[100] = "      Status: stop log ... \r\n"; // Variable for status
     if (fp != NULL) {
         time_t time_now = time(NULL); // Structure for time variable
         struct tm *newtime = localtime(&time_now); // Converting system time to local time
@@ -409,19 +416,15 @@ int main(int argc, char *argv[]) {
                         sendRequest(ip, ttl); // Send request to IP adress
                         switch (receiveICMP()) {
                             case 0: // go to the next IP address
-                                
-                                errno = 0;
                                 switch(printLog(res_info_TTL)) { // Add message "recive from IP and TTL" to log
                                   case FALSE:
                                     codeOS();
                                     finish();
                                  }
-                            
+
                                 getReply(); // Parse received data after request 
                                 break;
                             case 1: // Reached their destination
-                                
-                                errno = 0;
                                 switch(printLog("     Traceroute complete successfully")) { // Add message "traceroute complete" to log
                                   case FALSE:
                                     codeOS();
@@ -431,8 +434,6 @@ int main(int argc, char *argv[]) {
                                 break;
                             case 2: // Errors
                                 diagnosticError(WSAGetLastError()); // Starting diagnostic with last error code
-                                  
-                                errno = 0;
                                 switch(printLog(finStr)) { // Add message error to log
                                   case FALSE:
                                     codeOS();
@@ -444,8 +445,6 @@ int main(int argc, char *argv[]) {
                     }
                     break;
                 case FALSE:
-                
-                    errno = 0;
                     switch(printLog("Invalid adress error\n")) { // Add message "invalid adress error" to log
                       case FALSE:
                         codeOS();
